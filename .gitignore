@@ -1,0 +1,32 @@
+# .NET
+bin/
+obj/
+*.user
+appsettings.Development.json
+
+# Node
+node_modules/
+.next/
+out/
+.env.local
+.env*.local
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Data — never commit patient data or references
+data/
+*.bam
+*.bai
+*.vcf
+*.vcf.gz
+*.fastq
+*.fastq.gz
+*.fq.gz
+*.cram
+
+# OS
+.DS_Store

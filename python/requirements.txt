@@ -1,0 +1,5 @@
+mhcflurry>=2.1.0
+pandas>=2.0.0
+numpy>=1.24.0
+pysam>=0.22.0
+biopython>=1.81

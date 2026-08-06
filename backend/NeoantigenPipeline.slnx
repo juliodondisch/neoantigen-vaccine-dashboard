@@ -1,0 +1,8 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/NeoantigenPipeline.Api/NeoantigenPipeline.Api.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/NeoantigenPipeline.Tests/NeoantigenPipeline.Tests.csproj" />
+  </Folder>
+</Solution>

@@ -92,9 +92,11 @@ public class FixtureSeeder
             var vaf = Math.Round(0.1 + rng.NextDouble() * 0.6, 2);
             lines.Add($"chr21\t{pos}\t.\tA\tG\t99\tPASS\tVAF={vaf}");
         }
-        File.WriteAllLines(Path.Combine(dir, $"somatic_pass_{PathResolver.Timestamp()}.vcf.gz.txt"), lines);
-        // Written as plain text with a descriptive suffix since we don't gzip fixtures locally;
-        // downstream readers treat it as an opaque input path, so this is fine for dev fixtures.
+        var vcfPath = Path.Combine(dir, $"somatic_pass_{PathResolver.Timestamp()}.vcf.gz");
+        WriteGzipText(vcfPath, string.Join('\n', lines) + "\n");
+        // Real gzip content with the exact naming ProteinEffectsService's glob expects
+        // (somatic_pass_*.vcf.gz) — annotate_effects.py's io_utils.read_vcf opens by
+        // extension, so a plain-text file named .gz would fail to parse.
         _files.WriteJson(patientId, PipelineStepIds.Variants, $"variants_{PathResolver.Timestamp()}.summary.json",
             new { totalVariants = 20, passVariants = 20, medianVaf = 0.35 });
         return Task.CompletedTask;
@@ -278,6 +280,14 @@ public class FixtureSeeder
     {
         var content = "@synthetic-read/1\nACGTACGTACGTACGTACGTACGTACGT\n+\nIIIIIIIIIIIIIIIIIIIIIIIIIIII\n";
         File.WriteAllText(path, content);
+    }
+
+    private static void WriteGzipText(string path, string content)
+    {
+        using var fileStream = new FileStream(path, FileMode.Create);
+        using var gzip = new System.IO.Compression.GZipStream(fileStream, System.IO.Compression.CompressionMode.Compress);
+        using var writer = new StreamWriter(gzip);
+        writer.Write(content);
     }
 
     private static void WriteTinyBamPlaceholder(string path) =>

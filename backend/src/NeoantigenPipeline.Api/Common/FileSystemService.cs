@@ -200,7 +200,9 @@ public class FileSystemService
         ModifiedAt = info.LastWriteTimeUtc,
         Extension = info.Extension,
         FileKind = InferFileKind(info.Name),
-        IsUserUploaded = false,
+        // Not persisted metadata — approximated from file kind, since only the upload
+        // step's tumor/normal/rna files are ever user-supplied rather than pipeline-generated.
+        IsUserUploaded = InferFileKind(info.Name) is "tumor_dna" or "normal_dna" or "rna" && stepId == PipelineStepIds.Upload,
     };
 
     private static string? InferFileKind(string fileName)

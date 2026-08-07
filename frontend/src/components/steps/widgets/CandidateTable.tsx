@@ -83,7 +83,7 @@ export function CandidateTable({
           {highlightSelected && c.isSelected && (
             <span aria-hidden className="h-1.5 w-1.5 rounded-full bg-accent" />
           )}
-          {c.finalRank ?? "—"}
+          {c.finalRank ?? ", "}
         </span>
       ),
     },
@@ -137,7 +137,7 @@ export function CandidateTable({
       align: "right",
       render: (c) => (
         <span className="font-mono">
-          {c.expressionTpm !== undefined ? c.expressionTpm.toFixed(1) : "—"}
+          {c.expressionTpm !== undefined ? c.expressionTpm.toFixed(1) : ", "}
         </span>
       ),
     },

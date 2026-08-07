@@ -1,6 +1,6 @@
 import type { Config } from "tailwindcss";
 
-// Appendix C.8 of docs/TECHNICAL_SPEC.md — binding token set.
+// Appendix C.8 of docs/TECHNICAL_SPEC.md ,  binding token set.
 export default {
   content: [
     "./src/**/*.{js,ts,jsx,tsx,mdx}",

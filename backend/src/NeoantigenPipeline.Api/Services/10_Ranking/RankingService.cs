@@ -17,7 +17,7 @@ public class RankingService : PipelineStepBase
         Order = 10,
         DisplayName = "Weighted Final Ranking",
         ShortDescription = "Combine binding, immunogenicity, clonality, and HLA spread into a final rank",
-        LongExplanation = "The final ranking combines several signals, and you can control how much each one matters. Binding strength difference (agretopicity) measures how much more strongly the mutated fragment binds compared to its normal counterpart — a bigger gap means it looks more foreign. Expression is how actively the gene is used. Clonality is what fraction of tumor cells carry the mutation — targeting a mutation present in every cell is safer than one present in only some. HLA spread means deliberately choosing targets across different HLA types, so the tumor can't escape by losing just one.",
+        LongExplanation = "The final ranking combines several signals, and you can control how much each one matters. Binding strength difference (agretopicity) measures how much more strongly the mutated fragment binds compared to its normal counterpart ,  a bigger gap means it looks more foreign. Expression is how actively the gene is used. Clonality is what fraction of tumor cells carry the mutation ,  targeting a mutation present in every cell is safer than one present in only some. HLA spread means deliberately choosing targets across different HLA types, so the tumor can't escape by losing just one.",
         ToolName = "Custom scoring logic (C#)",
         RequiredInputStepIds = new[] { PipelineStepIds.Filtering },
         IsUploadStep = false,

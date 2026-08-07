@@ -3,7 +3,7 @@ using NeoantigenPipeline.Api.Models;
 namespace NeoantigenPipeline.Api.Services._10_Ranking;
 
 /// <summary>
-/// Set-level diversity constraint — HLA spread cannot be scored on a single peptide in
+/// Set-level diversity constraint ,  HLA spread cannot be scored on a single peptide in
 /// isolation, so it's applied here as a greedy selection penalty rather than folded into
 /// ScoreCalculator's additive weighted sum.
 /// </summary>

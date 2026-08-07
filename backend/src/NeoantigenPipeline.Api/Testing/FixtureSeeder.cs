@@ -95,7 +95,7 @@ public class FixtureSeeder
         var vcfPath = Path.Combine(dir, $"somatic_pass_{PathResolver.Timestamp()}.vcf.gz");
         WriteGzipText(vcfPath, string.Join('\n', lines) + "\n");
         // Real gzip content with the exact naming ProteinEffectsService's glob expects
-        // (somatic_pass_*.vcf.gz) — annotate_effects.py's io_utils.read_vcf opens by
+        // (somatic_pass_*.vcf.gz) ,  annotate_effects.py's io_utils.read_vcf opens by
         // extension, so a plain-text file named .gz would fail to parse.
         _files.WriteJson(patientId, PipelineStepIds.Variants, $"variants_{PathResolver.Timestamp()}.summary.json",
             new { totalVariants = 20, passVariants = 20, medianVaf = 0.35 });
@@ -291,7 +291,7 @@ public class FixtureSeeder
     }
 
     private static void WriteTinyBamPlaceholder(string path) =>
-        File.WriteAllText(path, "# placeholder BAM fixture — not a real alignment (dev-only, generated locally)\n");
+        File.WriteAllText(path, "# placeholder BAM fixture ,  not a real alignment (dev-only, generated locally)\n");
 
     private static string RandomProtein(Random rng, int length) =>
         new(Enumerable.Range(0, length).Select(_ => RandomAminoAcid(rng)).ToArray());

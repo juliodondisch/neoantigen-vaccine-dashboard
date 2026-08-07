@@ -15,7 +15,7 @@ public class ImmunogenicityService : PipelineStepBase
         Order = 8,
         DisplayName = "Predict Immunogenicity",
         ShortDescription = "Score which displayed candidates will actually provoke a T cell response",
-        LongExplanation = "Being displayed isn't the same as being noticed. Most displayed fragments never provoke an immune response. This step predicts which ones will actually attract T cells — and it's the least reliable part of the whole pipeline. Current tools score only modestly better than chance, and this is an open research problem across the entire field, not a limitation of this app specifically.",
+        LongExplanation = "Being displayed isn't the same as being noticed. Most displayed fragments never provoke an immune response. This step predicts which ones will actually attract T cells ,  and it's the least reliable part of the whole pipeline. Current tools score only modestly better than chance, and this is an open research problem across the entire field, not a limitation of this app specifically.",
         ToolName = "BigMHC-IM (or PRIME / PepFore)",
         RequiredInputStepIds = new[] { PipelineStepIds.Presentation },
         IsUploadStep = false,

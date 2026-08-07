@@ -5,7 +5,7 @@ DEVIATION from spec: the spec's example walkthrough downloads real chr21 from
 UCSC and runs wgsim/bwa-mem2 against it. Per CLAUDE.md ("never download
 reference genomes or real sequencing data") and this machine's disk budget
 (~3.8GB free, not the ~10GB assumed), this script instead *generates* a small
-synthetic "reference" sequence and synthetic reads locally — nothing is
+synthetic "reference" sequence and synthetic reads locally ,  nothing is
 downloaded, and the whole fixture set stays in the tens of KB rather than
 the ~350MB the spec's real-chr21 approach would use. Logged in
 docs/deviations.md. Swap in the real download once run on a server with
@@ -74,7 +74,7 @@ def build_bwa_index(fasta_path: str) -> None:
     import shutil
 
     if shutil.which("bwa-mem2") is None:
-        print(f"[make_test_data] bwa-mem2 not installed — skipping index build for {fasta_path}", file=sys.stderr)
+        print(f"[make_test_data] bwa-mem2 not installed ,  skipping index build for {fasta_path}", file=sys.stderr)
         return
     io_utils.run_command(["bwa-mem2", "index", fasta_path], "bwa-mem2 index")
 

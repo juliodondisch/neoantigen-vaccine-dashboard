@@ -16,7 +16,7 @@ public class RankingWeights
 
     public RankingWeights Normalized()
     {
-        // HlaSpread is excluded from the per-candidate sum — it's a set-level selection
+        // HlaSpread is excluded from the per-candidate sum ,  it's a set-level selection
         // constraint applied separately by HlaSpreadSelector, not an additive term.
         var sum = Presentation + Immunogenicity + Agretopicity + Expression + Clonality;
         if (sum <= 0)

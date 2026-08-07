@@ -9,7 +9,7 @@ function flatten(input: ClassValue, out: string[]): void {
   out.push(String(input));
 }
 
-/** Minimal classnames joiner — no external dependency needed for this app's needs. */
+/** Minimal classnames joiner ,  no external dependency needed for this app's needs. */
 export function cn(...inputs: ClassValue[]): string {
   const out: string[] = [];
   for (const input of inputs) flatten(input, out);

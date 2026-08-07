@@ -69,7 +69,7 @@ public class FileSystemService
         var baseName = Path.GetFileNameWithoutExtension(file.FileName);
 
         // BAMs are located downstream by glob (tumor_*.bam / normal_*.bam), not by
-        // original filename — canonicalize the base name by fileKind so a BAM uploaded
+        // original filename ,  canonicalize the base name by fileKind so a BAM uploaded
         // as e.g. "sample1.bam" is still findable regardless of what the user named it.
         // This applies whether the BAM lands in 01_upload or is uploaded directly into
         // 02_alignment (skipping alignment entirely when the caller already has BAMs).
@@ -217,7 +217,7 @@ public class FileSystemService
         ModifiedAt = info.LastWriteTimeUtc,
         Extension = info.Extension,
         FileKind = InferFileKind(info.Name),
-        // Not persisted metadata — approximated from file kind, since only the upload
+        // Not persisted metadata ,  approximated from file kind, since only the upload
         // step's tumor/normal/rna files are ever user-supplied rather than pipeline-generated.
         IsUserUploaded = InferFileKind(info.Name) is "tumor_dna" or "normal_dna" or "rna" && stepId == PipelineStepIds.Upload,
     };

@@ -24,7 +24,7 @@ public class UploadService : PipelineStepBase
         Order = 1,
         DisplayName = "Upload Sequencing Data",
         ShortDescription = "Upload tumor and normal DNA (and optional RNA) samples",
-        LongExplanation = "Every analysis starts with two DNA samples from the same person: one from their tumor, one from healthy tissue. Comparing them is what reveals which mutations belong to the cancer specifically, rather than being part of the person's normal inherited genetics. Optionally, you can also upload RNA sequencing data, which shows which genes the tumor is actually using — this improves target selection later but isn't required.",
+        LongExplanation = "Every analysis starts with two DNA samples from the same person: one from their tumor, one from healthy tissue. Comparing them is what reveals which mutations belong to the cancer specifically, rather than being part of the person's normal inherited genetics. Optionally, you can also upload RNA sequencing data, which shows which genes the tumor is actually using ,  this improves target selection later but isn't required.",
         ToolName = "None (file intake only)",
         RequiredInputStepIds = Array.Empty<string>(),
         IsUploadStep = true,

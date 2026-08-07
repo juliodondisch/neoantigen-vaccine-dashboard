@@ -65,7 +65,7 @@ export function FileTable({
   const columns: DataTableColumn<ManagedFile>[] = [
     { key: "name", header: "Name", render: (f) => <span className="font-mono text-small">{f.name}</span> },
     { key: "size", header: "Size", align: "right", render: (f) => <span className="font-mono">{formatBytes(f.sizeBytes)}</span> },
-    { key: "kind", header: "Kind", render: (f) => f.fileKind ?? "—" },
+    { key: "kind", header: "Kind", render: (f) => f.fileKind ?? ", " },
     { key: "modified", header: "Modified", render: (f) => formatDate(f.modifiedAt) },
     {
       key: "actions",

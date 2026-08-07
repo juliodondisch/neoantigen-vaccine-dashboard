@@ -54,7 +54,7 @@ public class PresentationService : PipelineStepBase
         {
             var response = await Python.RunAndParseAsync("predict_presentation.py", args, new PythonExecutionOptions { TimeoutSeconds = 600, CancellationToken = ct });
             if (useStub)
-                response.Message = (response.Message ?? "Completed") + " (stub predictor — mhcflurry not installed)";
+                response.Message = (response.Message ?? "Completed") + " (stub predictor ,  mhcflurry not installed)";
             WriteSummary(patientId, response.Summary);
             return BuildResult(patientId, response, DateTime.UtcNow - start);
         }

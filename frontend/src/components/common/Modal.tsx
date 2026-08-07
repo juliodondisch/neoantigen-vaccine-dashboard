@@ -24,7 +24,7 @@ export function Modal({ isOpen, onClose, title, children, footer, size = "md" }:
 
   // Separate from the key-listener effect below: this one must only fire when the
   // modal transitions open, not on every re-render where `onClose` gets a new
-  // identity (e.g. a parent recreating its close handler each render) — otherwise
+  // identity (e.g. a parent recreating its close handler each render) ,  otherwise
   // it steals focus back to the close button on every keystroke inside the modal.
   useEffect(() => {
     if (!isOpen) return;

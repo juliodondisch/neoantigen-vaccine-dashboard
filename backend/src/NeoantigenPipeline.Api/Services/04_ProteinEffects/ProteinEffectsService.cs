@@ -41,7 +41,7 @@ public class ProteinEffectsService : PipelineStepBase
         Order = 4,
         DisplayName = "Determine Protein Consequences",
         ShortDescription = "Translate mutations into protein-level effects",
-        LongExplanation = "Not every DNA mutation matters. Only about 1-2% of the genome codes for proteins at all, and even within that, some mutations happen to produce the same amino acid as before — changing the DNA without changing the protein. This step translates each mutation into its protein-level effect and keeps only the ones that genuinely alter a protein, since those are the only ones the immune system could possibly notice.",
+        LongExplanation = "Not every DNA mutation matters. Only about 1-2% of the genome codes for proteins at all, and even within that, some mutations happen to produce the same amino acid as before ,  changing the DNA without changing the protein. This step translates each mutation into its protein-level effect and keeps only the ones that genuinely alter a protein, since those are the only ones the immune system could possibly notice.",
         ToolName = "VEP (Variant Effect Predictor)",
         RequiredInputStepIds = new[] { PipelineStepIds.Variants },
         IsUploadStep = false,

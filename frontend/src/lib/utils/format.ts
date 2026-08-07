@@ -1,5 +1,5 @@
 export function formatBytes(bytes: number, decimals = 1): string {
-  if (!Number.isFinite(bytes) || bytes < 0) return "—";
+  if (!Number.isFinite(bytes) || bytes < 0) return ", ";
   if (bytes === 0) return "0 B";
   const units = ["B", "KB", "MB", "GB", "TB"];
   const exp = Math.min(
@@ -11,7 +11,7 @@ export function formatBytes(bytes: number, decimals = 1): string {
 }
 
 export function formatDuration(seconds: number): string {
-  if (!Number.isFinite(seconds) || seconds < 0) return "—";
+  if (!Number.isFinite(seconds) || seconds < 0) return ", ";
   if (seconds < 1) return `${Math.round(seconds * 1000)}ms`;
   if (seconds < 60) return `${seconds.toFixed(1)}s`;
   const mins = Math.floor(seconds / 60);
@@ -24,7 +24,7 @@ export function formatDuration(seconds: number): string {
 
 export function formatDate(iso: string): string {
   const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return "—";
+  if (Number.isNaN(d.getTime())) return ", ";
   return d.toLocaleString(undefined, {
     year: "numeric",
     month: "short",
@@ -36,7 +36,7 @@ export function formatDate(iso: string): string {
 
 export function formatRelativeTime(iso: string): string {
   const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return "—";
+  if (Number.isNaN(d.getTime())) return ", ";
   const diffMs = d.getTime() - Date.now();
   const diffSec = Math.round(diffMs / 1000);
 
@@ -62,12 +62,12 @@ export function formatRelativeTime(iso: string): string {
 }
 
 export function formatScore(score: number | undefined, decimals = 3): string {
-  if (score === undefined || score === null || Number.isNaN(score)) return "—";
+  if (score === undefined || score === null || Number.isNaN(score)) return ", ";
   return score.toFixed(decimals);
 }
 
 export function formatPercent(value: number, decimals = 1): string {
-  if (!Number.isFinite(value)) return "—";
+  if (!Number.isFinite(value)) return ", ";
   return `${(value * 100).toFixed(decimals)}%`;
 }
 
@@ -80,7 +80,7 @@ export function truncatePeptide(peptide: string, maxLength = 20): string {
 /**
  * Character-aligns a mutant peptide against its wild-type counterpart and
  * flags which positions differ. The signature visual element of the app
- * (Appendix C.6) — used by CandidateTable, the ranking preview, and
+ * (Appendix C.6) ,  used by CandidateTable, the ranking preview, and
  * ConstructDiagram to pick the mutated residue out in accent color.
  *
  * Peptides are typically the same length (a single substituted residue),

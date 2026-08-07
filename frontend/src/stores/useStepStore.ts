@@ -77,7 +77,7 @@ export const useStepStore = create<StepStore>()(
           const definitions = await listStepDefinitions();
           set({ definitions });
         } catch {
-          // Backend unreachable — fall back to the local, offline copy so
+          // Backend unreachable ,  fall back to the local, offline copy so
           // panels still render real step content during frontend dev.
           set({ definitions: STEP_DEFINITIONS });
         }
@@ -107,7 +107,7 @@ export const useStepStore = create<StepStore>()(
               : state.activeJobs,
           }));
         } catch {
-          // Leave prior state in place — surfaced via toast by the caller.
+          // Leave prior state in place ,  surfaced via toast by the caller.
         }
       },
 

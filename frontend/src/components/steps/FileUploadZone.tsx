@@ -98,7 +98,7 @@ export function FileUploadZone({
           Drop files here or click to browse
         </span>
         <span className="text-small text-slate">
-          Large files (100GB+) — consider a server path below instead.
+          Large files (100GB+) ,  consider a server path below instead.
         </span>
         <input
           ref={inputRef}

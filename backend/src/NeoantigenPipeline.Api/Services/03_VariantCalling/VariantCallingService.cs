@@ -23,7 +23,7 @@ public class VariantCallingService : PipelineStepBase
         Order = 3,
         DisplayName = "Call Somatic Mutations",
         ShortDescription = "Find DNA differences between tumor and normal samples",
-        LongExplanation = "This compares the tumor DNA against the healthy DNA from the same person and flags every position where they differ. Those differences are mutations that arose in the cancer specifically. The comparison against the person's own healthy tissue is essential — without it, you'd be flagging thousands of harmless inherited variations that every human has.",
+        LongExplanation = "This compares the tumor DNA against the healthy DNA from the same person and flags every position where they differ. Those differences are mutations that arose in the cancer specifically. The comparison against the person's own healthy tissue is essential ,  without it, you'd be flagging thousands of harmless inherited variations that every human has.",
         ToolName = "Mutect2 (GATK)",
         RequiredInputStepIds = new[] { PipelineStepIds.Alignment },
         IsUploadStep = false,

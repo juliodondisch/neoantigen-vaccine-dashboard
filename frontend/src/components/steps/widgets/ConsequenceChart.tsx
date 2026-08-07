@@ -3,7 +3,7 @@ interface ConsequenceChartProps {
   height?: number;
 }
 
-// Fixed category order + Okabe–Ito data tokens (Appendix C.2) — categorical
+// Fixed category order + Okabe–Ito data tokens (Appendix C.2) ,  categorical
 // hue is assigned by identity, never cycled/re-sorted by value.
 const CONSEQUENCE_ORDER: { key: string; label: string; color: string }[] = [
   { key: "missense", label: "Missense", color: "var(--data-1)" },

@@ -35,7 +35,7 @@ interface RankingStore {
   resetWeights: () => void;
   loadCommittedWeights: (patientId: string) => Promise<void>;
 
-  // Internal — not part of the spec's public interface, needed to key
+  // Internal ,  not part of the spec's public interface, needed to key
   // persistence by patient ID from a single Zustand store instance.
   _perPatient: Record<string, PerPatientRankingConfig>;
   _activePatientId: string | null;
@@ -159,7 +159,7 @@ export const useRankingStore = create<RankingStore>()(
             set({ lastCommittedWeights: committed });
           }
         } catch {
-          // no committed ranking yet, or backend unreachable — fine, keep local/defaults
+          // no committed ranking yet, or backend unreachable ,  fine, keep local/defaults
         }
       },
     }),

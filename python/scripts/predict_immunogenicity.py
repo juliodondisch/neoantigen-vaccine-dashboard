@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Predict which presented candidates will actually provoke a T cell response.
 
-This is the weakest link in the pipeline (see docs/PROJECT_PLAN.md — TESLA
+This is the weakest link in the pipeline (see docs/PROJECT_PLAN.md ,  TESLA
 benchmark precision ~7-50%). BigMHC-IM/PRIME are not installed locally, so
 predict_stub() (a specified, permanent fallback) is what actually runs here
 during local development.

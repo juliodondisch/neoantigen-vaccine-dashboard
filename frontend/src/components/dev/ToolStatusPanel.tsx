@@ -46,7 +46,7 @@ export function ToolStatusPanel({ statuses, diskStatus, onRefresh }: ToolStatusP
                     {tool.isAvailable ? "Available" : "Missing"}
                   </span>
                 </td>
-                <td className="py-2 font-mono text-slate">{tool.version ?? "—"}</td>
+                <td className="py-2 font-mono text-slate">{tool.version ?? ", "}</td>
                 <td className="py-2 text-small text-slate">{tool.usedBySteps.join(", ")}</td>
               </tr>
             ))}

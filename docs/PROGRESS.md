@@ -8,7 +8,7 @@ passing, backend smoke-tested live against the dev/tests fixture-seeding endpoin
 
 **What actually runs for real, locally (verified live via curl):**
 - 01 upload (manifest), 06 candidates (real sliding-window logic, no stub), 07 presentation
-  (stub — mhcflurry installed but its model weights aren't downloaded, see Temp patches),
+  (stub ,  mhcflurry installed but its model weights aren't downloaded, see Temp patches),
   08 immunogenicity (stub), 09 filtering (real self-similarity + expression logic against
   `data/references/proteome/mini_proteome.fasta`), 10 ranking (real C# scoring + HLA-spread
   selection, no Python).
@@ -17,25 +17,25 @@ passing, backend smoke-tested live against the dev/tests fixture-seeding endpoin
 03 variants (gatk), 04 protein effects (vep), 05 HLA typing (OptiType), 11 vaccine design
 (pvacvector). All five have real Python implementations written from the spec, gated behind
 `ValidateRequiredTools()`, and are exercised via `FixtureSeeder` for downstream testing
-instead. Their exact CLI flag shapes are unverified against real installs — see TEMP-PATCH
+instead. Their exact CLI flag shapes are unverified against real installs ,  see TEMP-PATCH
 comments in each script.
 
 **Frontend:** full component tree built (types, Zustand stores, API client, all layout/patient/
 step/common/dev components, all 11 step panels, both pages). `npm run build` and `npm run lint`
-pass. Not yet exercised in an actual browser — no display available in this environment; only
+pass. Not yet exercised in an actual browser ,  no display available in this environment; only
 verified via production build + the backend endpoints it calls.
 
-## Second pass (2026-08-07, later) — verification without subagents
+## Second pass (2026-08-07, later) ,  verification without subagents
 
 Went through every endpoint by hand with curl plus `npm run dev`/`npm run build`/`npm run lint`,
 no subagents. Found and fixed two more real bugs:
 
 - **`FixtureSeeder.SeedVariantsAsync` wrote `somatic_pass_{ts}.vcf.gz.txt`** (plain text with a
-  `.txt` tail) while `ProteinEffectsService` looks for glob `somatic_pass_*.vcf.gz` — the
+  `.txt` tail) while `ProteinEffectsService` looks for glob `somatic_pass_*.vcf.gz` ,  the
   fixture would never actually be found by step 4. Now writes real gzip content with the
   correct extension; verified with `gzip -dc` that it round-trips as a valid VCF.
 - **`isUserUploaded` reverted to `false` on every `GET .../files` call** after an upload,
-  because `FileSystemService.ToManagedFile` always hardcoded it — the flag was only ever
+  because `FileSystemService.ToManagedFile` always hardcoded it ,  the flag was only ever
   correct in the immediate upload response. Now inferred from file kind + step (tumor/normal/
   rna files inside `01_upload`), so it survives re-listing.
 
@@ -47,40 +47,40 @@ CORS from `localhost:3000` → `localhost:5163`, and all three frontend pages (`
 `/patients/[id]`, `/dev/tests`) returning 200 with no server-side render errors.
 
 **Still genuinely unverified** (would need either a real browser or the missing bio tools):
-actual client-side rendering/interactivity in a browser (no display in this environment — only
+actual client-side rendering/interactivity in a browser (no display in this environment ,  only
 confirmed the HTML shell renders and the API it depends on is reachable with correct CORS/JSON
 shapes), and the five tool-gated steps' real CLI invocations (bwa-mem2/GATK/VEP/OptiType/
-pvacvector — none installed here, marked TEMP-PATCH, deferred to server pass per CLAUDE.md).
+pvacvector ,  none installed here, marked TEMP-PATCH, deferred to server pass per CLAUDE.md).
 
 `npm run lint`: 0 errors, 9 pre-existing warnings (React hooks exhaustive-deps / setState-in-
-effect style suggestions in polling hooks) — not fixed, non-blocking, cosmetic.
+effect style suggestions in polling hooks) ,  not fixed, non-blocking, cosmetic.
 
 ## Backend/frontend contract fixes made during integration
 
-- Enum JSON serialization (`StepStatus`, `JobStatus`) now uses `JsonStringEnumConverter` —
+- Enum JSON serialization (`StepStatus`, `JobStatus`) now uses `JsonStringEnumConverter` , 
   was serializing as raw ints, which didn't match the frontend's string-literal types.
 - `GET /api/steps` added as a non-patient-scoped alias for step definitions (spec §11's
   `listStepDefinitions()` takes no patientId; spec §14's contract table nests it under
   `/api/patients/{pid}/steps`). Both routes now work.
 - `predict_presentation.py` falls back to the stub predictor when mhcflurry raises (not just
-  when the binary is missing from PATH) — mhcflurry is importable in `.venv` here but its
+  when the binary is missing from PATH) ,  mhcflurry is importable in `.venv` here but its
   downloaded model weights aren't present.
 
 ## Pending server verification
 
-Deferred per CLAUDE.md unattended-mode — implemented against the spec, not run against real
+Deferred per CLAUDE.md unattended-mode ,  implemented against the spec, not run against real
 tools:
 - `align.py` (bwa-mem2/STAR flag shapes)
 - `call_variants.py` (Mutect2/GATK flag shapes, matched-normal requirement)
 - `annotate_effects.py` (VEP flag shapes, `--database` vs cache mode)
 - `type_hla.py` (OptiType flag shapes, `_result.tsv` output parsing)
-- `design_vaccine.py`'s `run_pvacvector()` (raises until verified; construct assembly itself —
-  linkers/UTRs/codon table — is real, tested logic, just never run past the pvacvector gate)
+- `design_vaccine.py`'s `run_pvacvector()` (raises until verified; construct assembly itself , 
+  linkers/UTRs/codon table ,  is real, tested logic, just never run past the pvacvector gate)
 
 ## Temporary patches
 
 - `predict_presentation.py`: mhcflurry model weights not downloaded (would require a network
-  fetch of unknown size on a disk-constrained machine) — falls back to `predict_stub()`.
+  fetch of unknown size on a disk-constrained machine) ,  falls back to `predict_stub()`.
   Real fix: `mhcflurry-downloads fetch models_class1_presentation` once disk/network allow.
 - `python/tools/make_test_data.py`: generates a synthetic ~5kb "chromosome" instead of
   downloading real chr21, per CLAUDE.md's disk discipline (this machine had ~3.8GB free at
@@ -93,11 +93,11 @@ tools:
 ## Known gaps / not yet built
 
 - Integration/E2E test classes from spec §7 (`StepIntegrationTestBase`,
-  `AlignmentIntegrationTests`, etc.) — only the four required Tier-1 unit test classes exist
+  `AlignmentIntegrationTests`, etc.) ,  only the four required Tier-1 unit test classes exist
   (`SlidingWindowGeneratorTests`, `ScoreCalculatorTests`, `HlaSpreadSelectorTests`,
   `PathResolverTests`), all passing (25/25).
 - Frontend not verified in an actual browser (no display in this environment).
-- `data/references/GRCh38` and `vep_cache` intentionally absent — never download these here.
+- `data/references/GRCh38` and `vep_cache` intentionally absent ,  never download these here.
 - Step 1 upload: server-side-path registration mode exists (`FilesController.RegisterPath`)
   but is untested against a genuinely huge file.
 

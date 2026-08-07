@@ -27,7 +27,7 @@ export function ConstructDiagram({ construct, showSequence = false }: ConstructD
           return (
             <div
               key={i}
-              title={`${style.label}${el.label ? ` — ${el.label}` : ""} (${el.endPosition - el.startPosition} bp)`}
+              title={`${style.label}${el.label ? ` ,  ${el.label}` : ""} (${el.endPosition - el.startPosition} bp)`}
               className={cn(
                 "flex h-full items-center justify-center overflow-hidden text-micro text-white",
                 i > 0 && "border-l border-surface"

@@ -24,7 +24,7 @@ public class FilteringService : PipelineStepBase
         Order = 9,
         DisplayName = "Safety and Expression Filtering",
         ShortDescription = "Remove self-similar and (if available) unexpressed candidates",
-        LongExplanation = "Two filters here. First, safety: if a candidate fragment closely resembles a normal human protein, targeting it risks the immune system attacking healthy tissue — those are removed. Second, if RNA data was provided: mutations in genes the tumor isn't actually using are removed, since a gene that's switched off produces no protein and therefore no target.",
+        LongExplanation = "Two filters here. First, safety: if a candidate fragment closely resembles a normal human protein, targeting it risks the immune system attacking healthy tissue ,  those are removed. Second, if RNA data was provided: mutations in genes the tumor isn't actually using are removed, since a gene that's switched off produces no protein and therefore no target.",
         ToolName = "Reference proteome comparison; RNA-seq quantification",
         RequiredInputStepIds = new[] { PipelineStepIds.Immunogenicity },
         IsUploadStep = false,

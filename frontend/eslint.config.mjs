@@ -19,8 +19,8 @@ const eslintConfig = defineConfig([
       // flag the standard "setIsLoading(true) then fetch" effect pattern
       // and ref-mutation-on-every-render (used deliberately in
       // hooks/useStepPolling.ts to keep latest callbacks without
-      // re-subscribing). Both patterns are intentional here — this app has
-      // no React Compiler in its build — so they're downgraded to warnings
+      // re-subscribing). Both patterns are intentional here ,  this app has
+      // no React Compiler in its build ,  so they're downgraded to warnings
       // rather than rewritten around a stricter model the rest of the repo
       // doesn't opt into.
       "react-hooks/set-state-in-effect": "warn",

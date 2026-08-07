@@ -1,4 +1,4 @@
-# Neoantigen Pipeline — Technical Specification
+# Neoantigen Pipeline ,  Technical Specification
 
 > Companion to `PROJECT_PLAN.md`. This document defines every file, class, field, and function signature in the codebase.
 
@@ -10,19 +10,19 @@
 
 1. [Repository Structure](#1-repository-structure)
 2. [Data Directory Structure](#2-data-directory-structure)
-3. [Backend — Models & Enums](#3-backend--models--enums)
-4. [Backend — Common Infrastructure](#4-backend--common-infrastructure)
-5. [Backend — Controllers](#5-backend--controllers)
-6. [Backend — Step Services](#6-backend--step-services)
-7. [Backend — Testing](#7-backend--testing)
+3. [Backend ,  Models & Enums](#3-backend--models--enums)
+4. [Backend ,  Common Infrastructure](#4-backend--common-infrastructure)
+5. [Backend ,  Controllers](#5-backend--controllers)
+6. [Backend ,  Step Services](#6-backend--step-services)
+7. [Backend ,  Testing](#7-backend--testing)
 8. [Python Scripts](#8-python-scripts)
-9. [Frontend — Types](#9-frontend--types)
-10. [Frontend — Zustand Stores](#10-frontend--zustand-stores)
-11. [Frontend — API Client](#11-frontend--api-client)
-12. [Frontend — Components](#12-frontend--components)
-13. [Frontend — Pages](#13-frontend--pages)
+9. [Frontend ,  Types](#9-frontend--types)
+10. [Frontend ,  Zustand Stores](#10-frontend--zustand-stores)
+11. [Frontend ,  API Client](#11-frontend--api-client)
+12. [Frontend ,  Components](#12-frontend--components)
+13. [Frontend ,  Pages](#13-frontend--pages)
 14. [API Contract Reference](#14-api-contract-reference)
-15. [Appendix C — Design System](#appendix-c--design-system)
+15. [Appendix C ,  Design System](#appendix-c--design-system)
 
 ---
 
@@ -337,7 +337,7 @@ backend/tests/NeoantigenPipeline.Tests/Fixtures/data/
 
 ---
 
-## 3. Backend — Models & Enums
+## 3. Backend ,  Models & Enums
 
 ### `Models/Patient.cs`
 
@@ -583,7 +583,7 @@ public class UploadResponse
 
 ---
 
-## 4. Backend — Common Infrastructure
+## 4. Backend ,  Common Infrastructure
 
 ### `Common/AppConfig.cs`
 
@@ -870,7 +870,7 @@ public class PatientNotFoundException : PipelineException
 
 ---
 
-## 5. Backend — Controllers
+## 5. Backend ,  Controllers
 
 ### `Controllers/PatientsController.cs`
 
@@ -1028,7 +1028,7 @@ public class TestRunResult
 
 ---
 
-## 6. Backend — Step Services
+## 6. Backend ,  Step Services
 
 Every service extends `PipelineStepBase`. Only step-specific members are listed below; inherited members are in §4.
 
@@ -1068,7 +1068,7 @@ public class UploadManifest
 }
 ```
 
-**Note:** `RunAsync` for this step performs manifest generation only — there is no computation. It writes `_manifest.json`.
+**Note:** `RunAsync` for this step performs manifest generation only ,  there is no computation. It writes `_manifest.json`.
 
 ### `Services/02_Alignment/AlignmentService.cs`
 
@@ -1124,7 +1124,7 @@ public class VariantSummary
 }
 ```
 
-**Parameters:** `minVaf` (double, default 0.05), `usePanelOfNormals` (bool, default true), `intervals` (string, optional — e.g. `chr21` for tests)
+**Parameters:** `minVaf` (double, default 0.05), `usePanelOfNormals` (bool, default true), `intervals` (string, optional ,  e.g. `chr21` for tests)
 
 ### `Services/04_ProteinEffects/ProteinEffectsService.cs`
 
@@ -1210,7 +1210,7 @@ public class HlaProfile
 
 ### `Services/06_CandidateGeneration/SlidingWindowGenerator.cs`
 
-Pure logic, no external tools — fully unit-testable.
+Pure logic, no external tools ,  fully unit-testable.
 
 ```csharp
 public class SlidingWindowGenerator
@@ -1398,7 +1398,7 @@ public class FilteringSummary
 
 ### `Services/10_Ranking/ScoreCalculator.cs`
 
-Pure math, no I/O — fully unit-testable.
+Pure math, no I/O ,  fully unit-testable.
 
 ```csharp
 public class RankingWeights
@@ -1446,7 +1446,7 @@ public class NormalizationBounds
 
 ### `Services/10_Ranking/HlaSpreadSelector.cs`
 
-Set-level diversity constraint — cannot be expressed as a per-candidate weight.
+Set-level diversity constraint ,  cannot be expressed as a per-candidate weight.
 
 ```csharp
 public class HlaSpreadSelector
@@ -1490,7 +1490,7 @@ public class RankingService : PipelineStepBase
 
 **Parameters:** `presentationWeight`, `immunogenicityWeight`, `agretopicityWeight`, `expressionWeight`, `clonalityWeight`, `hlaSpreadWeight` (all double 0–1), `targetCount` (int, default 30)
 
-**Note:** This service runs entirely in C# — no Python. `Preview` is called by the frontend on slider change without writing files.
+**Note:** This service runs entirely in C# ,  no Python. `Preview` is called by the frontend on slider change without writing files.
 
 ### `Services/11_VaccineDesign/VaccineDesignService.cs`
 
@@ -1540,11 +1540,11 @@ public class ConstructElement
 
 ---
 
-## 7. Backend — Testing
+## 7. Backend ,  Testing
 
 ### `tests/Fixtures/FixtureSeeder.cs`
 
-The single most important testing component — decouples every step from every other.
+The single most important testing component ,  decouples every step from every other.
 
 ```csharp
 public class FixtureSeeder
@@ -1597,7 +1597,7 @@ public abstract class StepIntegrationTestBase : IAsyncLifetime
 }
 ```
 
-### Unit test classes — key test methods
+### Unit test classes ,  key test methods
 
 ```csharp
 public class SlidingWindowGeneratorTests
@@ -1904,7 +1904,7 @@ def check_reference_files(reference_root: str) -> list[dict]: ...
 
 ---
 
-## 9. Frontend — Types
+## 9. Frontend ,  Types
 
 ### `types/patient.ts`
 
@@ -2168,7 +2168,7 @@ export interface TestRunResult {
 
 ---
 
-## 10. Frontend — Zustand Stores
+## 10. Frontend ,  Zustand Stores
 
 ### `stores/usePatientStore.ts`
 
@@ -2193,7 +2193,7 @@ interface PatientStore {
 export const usePatientStore = create<PatientStore>()(...);
 ```
 
-**Not persisted** — always fetched fresh from disk-backed API.
+**Not persisted** ,  always fetched fresh from disk-backed API.
 
 ### `stores/useStepStore.ts`
 
@@ -2262,7 +2262,7 @@ interface ToastStore {
 export const useToastStore = create<ToastStore>()(...);
 ```
 
-**Defaults:** success/info auto-dismiss at 4000ms; errors are `persistent: true` (must be dismissed manually — error text is the most valuable thing on screen).
+**Defaults:** success/info auto-dismiss at 4000ms; errors are `persistent: true` (must be dismissed manually ,  error text is the most valuable thing on screen).
 
 ### `stores/useRankingStore.ts`
 
@@ -2318,7 +2318,7 @@ export const useDevStore = create<DevStore>()(...);
 
 ---
 
-## 11. Frontend — API Client
+## 11. Frontend ,  API Client
 
 ### `lib/api/client.ts`
 
@@ -2432,7 +2432,7 @@ export function createPoller<T>(fn: () => Promise<T>, predicate: (result: T) => 
 
 ---
 
-## 12. Frontend — Components
+## 12. Frontend ,  Components
 
 ### `components/layout/TopBar.tsx`
 
@@ -2507,7 +2507,7 @@ export function CreatePatientModal(props: CreatePatientModalProps): JSX.Element;
 
 ### `components/steps/StepPanel.tsx`
 
-Dispatcher — renders the correct panel for the selected step.
+Dispatcher ,  renders the correct panel for the selected step.
 
 ```typescript
 interface StepPanelProps {
@@ -2742,7 +2742,7 @@ export function ToolStatusPanel(props: ToolStatusPanelProps): JSX.Element;
 
 ---
 
-## 13. Frontend — Pages & Hooks
+## 13. Frontend ,  Pages & Hooks
 
 ### `app/layout.tsx`
 
@@ -2752,14 +2752,14 @@ export default function RootLayout({ children }: { children: React.ReactNode }):
 ```
 Renders `<ToastContainer />` globally.
 
-### `app/page.tsx` — patient list
+### `app/page.tsx` ,  patient list
 
 ```typescript
 export default function HomePage(): JSX.Element;
 ```
 Uses `usePatientStore`. Renders `PatientGrid` + `CreatePatientModal`.
 
-### `app/patients/[patientId]/page.tsx` — dashboard
+### `app/patients/[patientId]/page.tsx` ,  dashboard
 
 ```typescript
 interface PageProps { params: { patientId: string } }
@@ -2828,33 +2828,33 @@ export function useStepFiles(patientId: string, stepId: StepId): {
 
 | Method | Path | Request | Response |
 |---|---|---|---|
-| GET | `/api/patients` | — | `PatientSummary[]` |
+| GET | `/api/patients` | ,  | `PatientSummary[]` |
 | POST | `/api/patients` | `CreatePatientRequest` | `Patient` |
-| GET | `/api/patients/{pid}` | — | `Patient` |
+| GET | `/api/patients/{pid}` | ,  | `Patient` |
 | PATCH | `/api/patients/{pid}` | `UpdatePatientRequest` | `Patient` |
-| DELETE | `/api/patients/{pid}?deleteFiles=` | — | `204` |
-| GET | `/api/patients/{pid}/summary` | — | `PatientSummary` |
-| GET | `/api/patients/{pid}/steps` | — | `StepDefinition[]` |
-| GET | `/api/patients/{pid}/steps/states` | — | `StepState[]` |
-| GET | `/api/patients/{pid}/steps/{sid}` | — | `StepStatusResponse` |
-| GET | `/api/patients/{pid}/steps/{sid}/validate` | — | `ValidationResult` |
+| DELETE | `/api/patients/{pid}?deleteFiles=` | ,  | `204` |
+| GET | `/api/patients/{pid}/summary` | ,  | `PatientSummary` |
+| GET | `/api/patients/{pid}/steps` | ,  | `StepDefinition[]` |
+| GET | `/api/patients/{pid}/steps/states` | ,  | `StepState[]` |
+| GET | `/api/patients/{pid}/steps/{sid}` | ,  | `StepStatusResponse` |
+| GET | `/api/patients/{pid}/steps/{sid}/validate` | ,  | `ValidationResult` |
 | POST | `/api/patients/{pid}/steps/{sid}/run` | `RunStepRequest` | `RunStepResponse` |
-| GET | `/api/patients/{pid}/steps/{sid}/jobs/{jid}` | — | `JobRecord` |
-| POST | `/api/patients/{pid}/steps/{sid}/jobs/{jid}/cancel` | — | `204` |
-| GET | `/api/patients/{pid}/steps/{sid}/summary` | — | `object` |
+| GET | `/api/patients/{pid}/steps/{sid}/jobs/{jid}` | ,  | `JobRecord` |
+| POST | `/api/patients/{pid}/steps/{sid}/jobs/{jid}/cancel` | ,  | `204` |
+| GET | `/api/patients/{pid}/steps/{sid}/summary` | ,  | `object` |
 | POST | `/api/patients/{pid}/steps/10_ranking/preview` | `{weights, targetCount}` | `NeoantigenCandidate[]` |
-| GET | `/api/patients/{pid}/steps/{sid}/files` | — | `ManagedFile[]` |
+| GET | `/api/patients/{pid}/steps/{sid}/files` | ,  | `ManagedFile[]` |
 | POST | `/api/patients/{pid}/steps/{sid}/files/upload` | multipart | `UploadResponse` |
 | POST | `/api/patients/{pid}/steps/{sid}/files/register` | `RegisterFileRequest` | `UploadResponse` |
-| GET | `/api/patients/{pid}/steps/{sid}/files/{name}/download` | — | binary |
-| GET | `/api/patients/{pid}/steps/{sid}/files/{name}/preview?maxLines=` | — | `string` |
-| DELETE | `/api/patients/{pid}/steps/{sid}/files/{name}` | — | `204` |
-| GET | `/api/tools` | — | `ToolStatus[]` |
-| POST | `/api/tools/refresh` | — | `ToolStatus[]` |
-| GET | `/api/tools/disk` | — | `DiskStatus` |
+| GET | `/api/patients/{pid}/steps/{sid}/files/{name}/download` | ,  | binary |
+| GET | `/api/patients/{pid}/steps/{sid}/files/{name}/preview?maxLines=` | ,  | `string` |
+| DELETE | `/api/patients/{pid}/steps/{sid}/files/{name}` | ,  | `204` |
+| GET | `/api/tools` | ,  | `ToolStatus[]` |
+| POST | `/api/tools/refresh` | ,  | `ToolStatus[]` |
+| GET | `/api/tools/disk` | ,  | `DiskStatus` |
 | POST | `/api/dev/tests/seed` | `SeedRequest` | `Patient` |
 | POST | `/api/dev/tests/run` | `RunTestsRequest` | `TestRunResult[]` |
-| DELETE | `/api/dev/tests/cleanup` | — | `204` |
+| DELETE | `/api/dev/tests/cleanup` | ,  | `204` |
 
 ### Error response shape
 
@@ -2868,11 +2868,11 @@ All non-2xx responses:
 }
 ```
 
-Python stderr is surfaced verbatim in `detail` for `PythonExecutionException`. Do not genericize these — the real error text is the most useful thing the user can see.
+Python stderr is surfaced verbatim in `detail` for `PythonExecutionException`. Do not genericize these ,  the real error text is the most useful thing the user can see.
 
 ---
 
-## Appendix A — Dependency Injection Registration
+## Appendix A ,  Dependency Injection Registration
 
 `Program.cs` registration order:
 
@@ -2881,14 +2881,14 @@ Python stderr is surfaced verbatim in `detail` for `PythonExecutionException`. D
 builder.Services.Configure<AppConfig>(builder.Configuration.GetSection("App"));
 builder.Services.AddSingleton<AppConfig>(sp => sp.GetRequiredService<IOptions<AppConfig>>().Value);
 
-// Infrastructure (singleton — stateless)
+// Infrastructure (singleton ,  stateless)
 builder.Services.AddSingleton<PathResolver>();
 builder.Services.AddSingleton<FileSystemService>();
 builder.Services.AddSingleton<PythonRunner>();
 builder.Services.AddSingleton<ToolChecker>();
 builder.Services.AddSingleton<PatientRepository>();
 
-// Steps (singleton — must register before StepRegistry)
+// Steps (singleton ,  must register before StepRegistry)
 builder.Services.AddSingleton<UploadService>();
 builder.Services.AddSingleton<IPipelineStep>(sp => sp.GetRequiredService<UploadService>());
 // ... repeat for all 11, registering both concrete type and IPipelineStep
@@ -2901,7 +2901,7 @@ builder.Services.AddSingleton<FixtureSeeder>();   // dev only
 
 **Ordering constraint:** services with inter-dependencies (`AlignmentService` → `UploadService`, `RankingService` → `FilteringService` + `HlaTypingService`) must have their concrete types registered, not just the interface.
 
-## Appendix B — Configuration
+## Appendix B ,  Configuration
 
 `appsettings.json`:
 
@@ -2935,16 +2935,16 @@ builder.Services.AddSingleton<FixtureSeeder>();   // dev only
 `frontend/.env.local`:
 
 ```
-NEXT_PUBLIC_API_BASE_URL=http://localhost:5000
+NEXT_PUBLIC_API_BASE_URL=http://localhost:5163
 NEXT_PUBLIC_ENABLE_DEV_TOOLS=true
 NEXT_PUBLIC_POLL_INTERVAL_MS=2000
 ```
 
 ---
 
-## Appendix C — Design System
+## Appendix C ,  Design System
 
-> **This appendix is deliberately malleable.** Unlike the class signatures and API contracts above — which are binding — the visual direction here is a starting point, not a contract. If a specific value doesn't work in practice (a color reads badly against real data, a spacing value crowds a dense table), adjust it and note the change. What should *not* drift are the underlying principles in C.1: they're what make the rest cohere.
+> **This appendix is deliberately malleable.** Unlike the class signatures and API contracts above ,  which are binding ,  the visual direction here is a starting point, not a contract. If a specific value doesn't work in practice (a color reads badly against real data, a spacing value crowds a dense table), adjust it and note the change. What should *not* drift are the underlying principles in C.1: they're what make the rest cohere.
 
 ### C.1 Principles
 
@@ -2952,37 +2952,37 @@ Four rules that govern every visual decision. Deviate from the tokens if needed;
 
 1. **Chrome is quiet; color belongs to data.** Buttons, panels, and navigation stay neutral. Saturated color is reserved for variant consequences, score gradients, and state indicators. If the UI shell competes with the VAF histogram, the shell is wrong.
 2. **Saturation encodes confidence.** This pipeline's predictions are genuinely uncertain (immunogenicity precision runs ~10–35%). A low-confidence score should *look* washed out. Never render an uncertain number with the same visual weight as a reliable one.
-3. **Space comes from padding, not emptiness.** "Spacious" means generous internal padding and breathing room inside dense components — not large blank regions. A table with 48px rows and 32px panel padding feels spacious while showing plenty of data.
+3. **Space comes from padding, not emptiness.** "Spacious" means generous internal padding and breathing room inside dense components ,  not large blank regions. A table with 48px rows and 32px panel padding feels spacious while showing plenty of data.
 4. **Borders, not shadows.** Hairline rules define structure. Drop shadows read as modern SaaS; flat panels with crisp 1px borders read as a precision instrument, which is the target.
 
 ### C.2 Color tokens
 
-The accent derives from **H&E staining** (hematoxylin and eosin — the stain that renders tumor tissue visible under a microscope). Hematoxylin's deep blue-violet is domain-true and avoids the generic medical blue every EHR reaches for.
+The accent derives from **H&E staining** (hematoxylin and eosin ,  the stain that renders tumor tissue visible under a microscope). Hematoxylin's deep blue-violet is domain-true and avoids the generic medical blue every EHR reaches for.
 
 ```css
 :root {
   /* Neutrals */
-  --color-ink:        #12181B;  /* primary text — near-black, cool cast, never pure black */
+  --color-ink:        #12181B;  /* primary text ,  near-black, cool cast, never pure black */
   --color-slate:      #5A666B;  /* secondary text, labels, metadata */
-  --color-paper:      #F6F7F6;  /* page background — cool grey-green */
+  --color-paper:      #F6F7F6;  /* page background ,  cool grey-green */
   --color-surface:    #FFFFFF;  /* panels and cards above paper */
   --color-rule:       #DDE2E1;  /* hairlines, borders, table dividers */
   --color-rule-strong:#C3CBCA;  /* emphasis dividers, input borders */
 
   /* Accent */
-  --color-accent:       #403A7E;  /* hematoxylin — primary buttons, active step, focus */
+  --color-accent:       #403A7E;  /* hematoxylin ,  primary buttons, active step, focus */
   --color-accent-hover: #4E4794;
   --color-accent-muted: #E8E7F2;  /* tinted backgrounds, selected rows */
 
-  /* Semantic — step states */
+  /* Semantic ,  step states */
   --color-state-idle:      #8C9599;  /* NotStarted */
   --color-state-blocked:   #B07D2B;  /* InputsMissing */
   --color-state-ready:     #403A7E;  /* Ready / Running */
   --color-state-complete:  #2F6B4F;  /* Completed */
   --color-state-failed:    #A33A3A;  /* Failed */
-  --color-state-skipped:   #A8AFB2;  /* Skipped — tool missing */
+  --color-state-skipped:   #A8AFB2;  /* Skipped ,  tool missing */
 
-  /* Semantic — feedback */
+  /* Semantic ,  feedback */
   --color-success-bg: #EDF4F0;
   --color-error-bg:   #F7EDED;
   --color-warning-bg: #F7F1E4;
@@ -2990,7 +2990,7 @@ The accent derives from **H&E staining** (hematoxylin and eosin — the stain th
 }
 ```
 
-**Data palette (categorical).** For variant consequences, HLA alleles, and any other categorical encoding, use an Okabe–Ito-derived set — the colorblind-safe standard in scientific publishing, which is the correct instinct for this domain.
+**Data palette (categorical).** For variant consequences, HLA alleles, and any other categorical encoding, use an Okabe–Ito-derived set ,  the colorblind-safe standard in scientific publishing, which is the correct instinct for this domain.
 
 ```css
 :root {
@@ -3003,7 +3003,7 @@ The accent derives from **H&E staining** (hematoxylin and eosin — the stain th
 }
 ```
 
-**Score gradients (continuous).** Single-hue ramp, low→high. Use for presentation scores, immunogenicity scores, and final rank. The washed-out low end is the point — see principle 2.
+**Score gradients (continuous).** Single-hue ramp, low→high. Use for presentation scores, immunogenicity scores, and final rank. The washed-out low end is the point ,  see principle 2.
 
 ```css
 --score-0:  #DDE2E1;
@@ -3019,7 +3019,7 @@ The accent derives from **H&E staining** (hematoxylin and eosin — the stain th
 
 No third display face. Hierarchy comes from size, weight, and tracking. A decorative heading font on a data dashboard reads as a marketing page wearing a lab coat.
 
-Mono for peptides is functional, not stylistic — character-level alignment is how you see which residue differs between mutant and wild-type.
+Mono for peptides is functional, not stylistic ,  character-level alignment is how you see which residue differs between mutant and wild-type.
 
 ```css
 --font-sans: 'IBM Plex Sans', system-ui, sans-serif;
@@ -3058,16 +3058,16 @@ Mono for peptides is functional, not stylistic — character-level alignment is 
 | Sidebar width | 280px |
 | Max content width | 1400px |
 
-**Border radius — keep it minimal.** This is a firm preference, not a suggestion.
+**Border radius ,  keep it minimal.** This is a firm preference, not a suggestion.
 
 ```css
 --radius-sm: 2px;   /* badges, tags, inline chips */
---radius-md: 3px;   /* buttons, inputs, panels, cards — the default */
---radius-lg: 4px;   /* modals — the maximum anywhere in the app */
+--radius-md: 3px;   /* buttons, inputs, panels, cards ,  the default */
+--radius-lg: 4px;   /* modals ,  the maximum anywhere in the app */
 --radius-full: 9999px;  /* ONLY for the spinner and step-marker dots */
 ```
 
-Nothing rectangular in this app should exceed 4px radius. No pill-shaped buttons, no rounded-corner cards, no `rounded-lg`/`rounded-xl`/`rounded-2xl` Tailwind classes on containers. Soft corners read as consumer SaaS; near-square corners read as an instrument. When in doubt, use less rounding — 0px is an acceptable choice, 8px is not.
+Nothing rectangular in this app should exceed 4px radius. No pill-shaped buttons, no rounded-corner cards, no `rounded-lg`/`rounded-xl`/`rounded-2xl` Tailwind classes on containers. Soft corners read as consumer SaaS; near-square corners read as an instrument. When in doubt, use less rounding ,  0px is an acceptable choice, 8px is not.
 
 ### C.5 Component rules
 
@@ -3086,11 +3086,11 @@ Nothing rectangular in this app should exceed 4px radius. No pill-shaped buttons
 
 **Sliders (ranking panel).** Track `--color-rule`, fill and thumb `--color-accent`, square thumb with 2px radius. Live numeric value in mono to the right of the label. Disabled sliders (expression without RNA-seq) drop to 40% opacity with the reason shown inline.
 
-**Toasts.** Bottom-right, 3px radius, `--color-surface` with a 3px left border in the semantic color. Success/info auto-dismiss at 4000ms; **errors persist until dismissed** — the Python stderr text is the most valuable thing on screen.
+**Toasts.** Bottom-right, 3px radius, `--color-surface` with a 3px left border in the semantic color. Success/info auto-dismiss at 4000ms; **errors persist until dismissed** ,  the Python stderr text is the most valuable thing on screen.
 
-**Status indicators.** 8px circle in the semantic state color. `--color-state-ready` pulses while running. Never rely on color alone — pair with a label or icon.
+**Status indicators.** 8px circle in the semantic state color. `--color-state-ready` pulses while running. Never rely on color alone ,  pair with a label or icon.
 
-### C.6 Signature element — the peptide diff
+### C.6 Signature element ,  the peptide diff
 
 The one place to spend visual boldness. Mutant and wild-type peptides rendered character-aligned in mono, with the mutated residue picked out in `--color-accent` on `--color-accent-muted`:
 
@@ -3103,7 +3103,7 @@ Implemented via `highlightMutation()` in `lib/utils/format.ts`. Appears in `Cand
 
 This is the entire premise of the application made typographically vivid: a single amino acid difference is what makes a protein foreign to the immune system. Everything else in the interface stays disciplined so this reads as the memorable thing.
 
-**Secondary structural device — the step spine.** The sidebar renders the 11 steps on a vertical connecting line, each with a state marker. Numbering is justified here because this genuinely *is* an ordered process where sequence carries information — it's structure encoding content, not decoration. The connecting line segment between two steps takes `--color-state-complete` once the earlier step has finished, so progress is legible at a glance.
+**Secondary structural device ,  the step spine.** The sidebar renders the 11 steps on a vertical connecting line, each with a state marker. Numbering is justified here because this genuinely *is* an ordered process where sequence carries information ,  it's structure encoding content, not decoration. The connecting line segment between two steps takes `--color-state-complete` once the earlier step has finished, so progress is legible at a glance.
 
 ### C.7 Quality floor
 
@@ -3111,7 +3111,7 @@ Non-negotiable regardless of how the tokens evolve:
 
 - Visible keyboard focus on every interactive element (2px `--color-accent` ring)
 - Text contrast ≥ 4.5:1 against its background
-- `prefers-reduced-motion` respected — spinner degrades to a static indicator, pulse animations disabled
+- `prefers-reduced-motion` respected ,  spinner degrades to a static indicator, pulse animations disabled
 - Never encode meaning in color alone
 - Dense tables remain readable at 1280px width; sidebar collapses below 1024px
 

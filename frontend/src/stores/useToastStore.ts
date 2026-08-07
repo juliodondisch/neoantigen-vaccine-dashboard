@@ -40,7 +40,7 @@ export const useToastStore = create<ToastStore>()((set, get) => ({
     return id;
   },
 
-  // success/info auto-dismiss at 4000ms; errors persist until dismissed —
+  // success/info auto-dismiss at 4000ms; errors persist until dismissed , 
   // the Python stderr text is the most valuable thing on screen.
   success: (title, message) => get().show({ variant: "success", title, message, durationMs: 4000, persistent: false }),
   info: (title, message) => get().show({ variant: "info", title, message, durationMs: 4000, persistent: false }),

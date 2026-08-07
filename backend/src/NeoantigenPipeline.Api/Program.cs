@@ -18,13 +18,13 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.Configure<AppConfig>(builder.Configuration.GetSection("App"));
 builder.Services.AddSingleton(sp => sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<AppConfig>>().Value);
 
-// Infrastructure (singleton — stateless)
+// Infrastructure (singleton ,  stateless)
 builder.Services.AddSingleton<PathResolver>();
 builder.Services.AddSingleton<FileSystemService>();
 builder.Services.AddSingleton<PythonRunner>();
 builder.Services.AddSingleton<ToolChecker>();
 
-// Steps — concrete registration needed because some services take others as constructor
+// Steps ,  concrete registration needed because some services take others as constructor
 // dependencies (see docs/TECHNICAL_SPEC.md Appendix A). Register both the concrete type
 // and IPipelineStep for each.
 builder.Services.AddSingleton<UploadService>();

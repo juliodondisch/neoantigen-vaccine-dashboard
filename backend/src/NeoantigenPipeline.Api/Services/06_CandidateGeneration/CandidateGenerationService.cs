@@ -18,7 +18,7 @@ public class CandidateGenerationService : PipelineStepBase
         Order = 6,
         DisplayName = "Generate Candidate Peptides",
         ShortDescription = "Slide a window across each mutation to build candidate fragments",
-        LongExplanation = "HLA display cases only hold short fragments — around 8 to 11 amino acids. Since we can't know exactly where the cell's internal machinery will cut a protein, this step generates every plausible short fragment containing each mutation, sliding a window across the mutated position. It also generates the matching unmutated version of each fragment, which is needed later to check how different the mutant version really looks to the immune system.",
+        LongExplanation = "HLA display cases only hold short fragments ,  around 8 to 11 amino acids. Since we can't know exactly where the cell's internal machinery will cut a protein, this step generates every plausible short fragment containing each mutation, sliding a window across the mutated position. It also generates the matching unmutated version of each fragment, which is needed later to check how different the mutant version really looks to the immune system.",
         ToolName = "pVACtools (windowing + wild-type pairing; reimplemented natively in C#)",
         RequiredInputStepIds = new[] { PipelineStepIds.ProteinEffects, PipelineStepIds.HlaTyping },
         IsUploadStep = false,

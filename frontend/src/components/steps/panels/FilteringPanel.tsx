@@ -46,7 +46,7 @@ export function FilteringPanel({ patientId, definition, state }: PanelProps) {
   const columns: DataTableColumn<NeoantigenCandidate>[] = [
     { key: "peptide", header: "Peptide", render: (c) => <span className="font-mono text-ui">{c.mutantPeptide}</span> },
     { key: "gene", header: "Gene", render: (c) => <span className="font-mono text-ui">{c.geneSymbol}</span> },
-    { key: "reason", header: "Removal reason", render: (c) => c.removalReason ?? "—" },
+    { key: "reason", header: "Removal reason", render: (c) => c.removalReason ?? ", " },
   ];
 
   return (
@@ -65,7 +65,7 @@ export function FilteringPanel({ patientId, definition, state }: PanelProps) {
           <span className="text-ui text-ink">Apply expression filter</span>
           {!hasRna && (
             <span className="text-small text-slate">
-              (disabled — no RNA-seq uploaded in step 1)
+              (disabled ,  no RNA-seq uploaded in step 1)
             </span>
           )}
         </label>

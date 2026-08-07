@@ -24,7 +24,7 @@ export function StepSidebar({
       className="flex w-[280px] shrink-0 flex-col border-r border-rule bg-surface py-6"
     >
       <div className="relative">
-        {/* The step spine — Appendix C.6 secondary structural device. */}
+        {/* The step spine ,  Appendix C.6 secondary structural device. */}
         <div
           aria-hidden
           className="absolute left-[19px] top-3 bottom-3 w-px bg-rule"

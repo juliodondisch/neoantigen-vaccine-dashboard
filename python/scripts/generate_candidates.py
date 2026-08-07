@@ -2,7 +2,7 @@
 """Slide a window across each mutation to build mutant/wild-type peptide pairs.
 
 Pure logic, no external tools. Duplicated deliberately in C#
-(Services/06_CandidateGeneration/SlidingWindowGenerator.cs) — that version is
+(Services/06_CandidateGeneration/SlidingWindowGenerator.cs) ,  that version is
 authoritative and unit-tested; this one exists for standalone pipeline use and
 must stay behaviorally identical (see CLAUDE.md "things that will bite you").
 """

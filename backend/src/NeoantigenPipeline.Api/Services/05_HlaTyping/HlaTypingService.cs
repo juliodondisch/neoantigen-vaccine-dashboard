@@ -27,7 +27,7 @@ public class HlaTypingService : PipelineStepBase
         Order = 5,
         DisplayName = "HLA Typing",
         ShortDescription = "Determine the patient's HLA class I alleles",
-        LongExplanation = "HLA molecules are the display cases cells use to show the immune system samples of what they're building inside. Everyone inherits a specific set of HLA variants, and different variants physically hold different protein fragments — a target that works for one person may be invisible in another. This step reads the healthy DNA (HLA type is inherited, not caused by the cancer) to determine this patient's specific HLA variants.",
+        LongExplanation = "HLA molecules are the display cases cells use to show the immune system samples of what they're building inside. Everyone inherits a specific set of HLA variants, and different variants physically hold different protein fragments ,  a target that works for one person may be invisible in another. This step reads the healthy DNA (HLA type is inherited, not caused by the cancer) to determine this patient's specific HLA variants.",
         ToolName = "OptiType",
         RequiredInputStepIds = new[] { PipelineStepIds.Upload },
         IsUploadStep = false,

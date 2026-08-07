@@ -35,7 +35,7 @@ function messageOf(err: unknown): string {
   return "Unexpected error";
 }
 
-// Not persisted — always fetched fresh from the disk-backed API.
+// Not persisted ,  always fetched fresh from the disk-backed API.
 export const usePatientStore = create<PatientStore>()((set, get) => ({
   patients: [],
   currentPatient: null,

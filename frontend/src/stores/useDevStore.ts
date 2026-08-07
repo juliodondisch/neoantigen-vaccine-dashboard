@@ -49,7 +49,7 @@ export const useDevStore = create<DevStore>()((set) => ({
       const toolStatuses = await apiRefreshTools();
       set({ toolStatuses });
     } catch {
-      // ignore — caller's toast surfaces the failure
+      // ignore ,  caller's toast surfaces the failure
     }
   },
 

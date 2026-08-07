@@ -39,7 +39,7 @@ def _flag(v: str) -> bool:
 def dry_run_stub(output_bam: str) -> dict:
     io_utils.ensure_dir(os.path.dirname(output_bam))
     with open(output_bam, "w") as fh:
-        fh.write("# TEMP-PATCH: stub BAM — bwa-mem2/STAR not installed, --dry-run used\n")
+        fh.write("# TEMP-PATCH: stub BAM ,  bwa-mem2/STAR not installed, --dry-run used\n")
     with open(output_bam + ".bai", "w") as fh:
         fh.write("# stub index\n")
     return {"mapped_reads": 0, "total_reads": 0, "mapping_rate": 0.0, "mean_coverage": 0.0, "dry_run": True}

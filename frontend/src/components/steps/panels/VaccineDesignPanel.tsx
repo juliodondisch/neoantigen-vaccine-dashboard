@@ -104,7 +104,7 @@ export function VaccineDesignPanel({ patientId, definition, state }: PanelProps)
       </div>
 
       <p className="text-small text-slate">
-        This produces a sequence file, not a physical vaccine — manufacturing requires
+        This produces a sequence file, not a physical vaccine ,  manufacturing requires
         specialized facilities and regulatory approval.
       </p>
     </div>

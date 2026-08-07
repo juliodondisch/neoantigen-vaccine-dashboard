@@ -7,7 +7,7 @@ export interface PollOptions {
 
 /**
  * Repeatedly calls `fn` until `predicate(result)` is true, or a stop
- * condition (maxAttempts / timeoutMs) is hit — in which case the last
+ * condition (maxAttempts / timeoutMs) is hit ,  in which case the last
  * result is returned as-is (callers decide whether that's an error).
  */
 export async function pollUntil<T>(

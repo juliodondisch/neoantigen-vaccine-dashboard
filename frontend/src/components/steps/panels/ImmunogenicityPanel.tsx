@@ -42,9 +42,8 @@ export function ImmunogenicityPanel({ patientId, definition, state }: PanelProps
       <StepExplanation definition={definition} />
 
       <div className="rounded-md border border-l-[3px] border-rule border-l-state-blocked bg-feedback-warningBg p-4 text-ui text-ink">
-        Honesty note: current immunogenicity predictors run roughly 10&ndash;35% precision.
-        This is an open research problem, not a limitation of this app. Use these scores to
-        <em> order</em> candidates, not to trust any single prediction.
+        Current immunogenicity predictors are machine learning models with about 10&ndash;35% precision.
+        Use these scores to order neoantigen candidates, but do not to trust any single prediction. For near 100% precision, we would need real lab testing.
       </div>
 
       <div className="flex items-end gap-6 rounded-md border border-rule bg-surface p-6">

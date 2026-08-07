@@ -40,7 +40,7 @@ public class VaccineDesignService : PipelineStepBase
         Order = 11,
         DisplayName = "Design Vaccine Sequence",
         ShortDescription = "Assemble selected targets into a synthesizable mRNA construct",
-        LongExplanation = "This assembles the final selected targets into a single mRNA sequence — the actual blueprint a lab would synthesize. The chosen fragments are strung together with short connector sequences between them, wrapped in standard start and end elements that help cells read the instructions properly. The output is a sequence file, not a physical vaccine; manufacturing requires specialized facilities and regulatory approval.",
+        LongExplanation = "This assembles the final selected targets into a single mRNA sequence ,  the actual blueprint a lab would synthesize. The chosen fragments are strung together with short connector sequences between them, wrapped in standard start and end elements that help cells read the instructions properly. The output is a sequence file, not a physical vaccine; manufacturing requires specialized facilities and regulatory approval.",
         ToolName = "pVACvector",
         RequiredInputStepIds = new[] { PipelineStepIds.Ranking },
         IsUploadStep = false,

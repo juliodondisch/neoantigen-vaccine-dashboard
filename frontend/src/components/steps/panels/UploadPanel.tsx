@@ -48,7 +48,7 @@ export function UploadPanel({ patientId, definition, state }: PanelProps) {
           stepId={definition.id}
           fileKind="rna"
           label="Tumor RNA-seq"
-          description="Optional — improves expression filtering"
+          description="Optional ,  improves expression filtering"
           acceptedExtensions={[".fastq", ".fastq.gz", ".fq.gz", ".bam"]}
           onUploaded={refresh}
         />
@@ -73,7 +73,7 @@ export function UploadPanel({ patientId, definition, state }: PanelProps) {
       </div>
 
       {state?.status === "Completed" && (
-        <p className="text-small text-state-complete">Upload complete — proceed to alignment.</p>
+        <p className="text-small text-state-complete">Upload complete ,  proceed to alignment.</p>
       )}
     </div>
   );

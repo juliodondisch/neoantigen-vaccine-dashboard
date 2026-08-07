@@ -28,7 +28,7 @@ export function AlignmentPanel({ patientId, definition, state }: PanelProps) {
 
       {alreadyAligned && (
         <div className="rounded-md border border-rule bg-feedback-infoBg p-4 text-ui text-ink">
-          Uploaded inputs already include BAM files — alignment may be a no-op pass-through
+          Uploaded inputs already include BAM files ,  alignment may be a no-op pass-through
           for those samples.
         </div>
       )}
@@ -39,7 +39,7 @@ export function AlignmentPanel({ patientId, definition, state }: PanelProps) {
           stepId={definition.id}
           fileKind="tumor_dna"
           label="Tumor BAM"
-          description="Already-aligned BAM — skip alignment for this sample"
+          description="Already-aligned BAM ,  skip alignment for this sample"
           acceptedExtensions={[".bam"]}
           allowServerPath
           onUploaded={refresh}
@@ -49,7 +49,7 @@ export function AlignmentPanel({ patientId, definition, state }: PanelProps) {
           stepId={definition.id}
           fileKind="normal_dna"
           label="Normal BAM"
-          description="Already-aligned BAM — skip alignment for this sample"
+          description="Already-aligned BAM ,  skip alignment for this sample"
           acceptedExtensions={[".bam"]}
           allowServerPath
           onUploaded={refresh}

@@ -3,7 +3,7 @@ import { API_BASE_URL } from "@/lib/constants/config";
 
 /**
  * Thin wrapper around fetch. Every non-2xx response is normalized into
- * ApiError and thrown — see the "Error response shape" in
+ * ApiError and thrown ,  see the "Error response shape" in
  * docs/TECHNICAL_SPEC.md §14. Python stderr (surfaced by the backend in
  * `detail` for PythonExecutionException) flows through verbatim; callers
  * (toasts) must not genericize it.
@@ -57,7 +57,7 @@ export class ApiClient {
     formData: FormData,
     onProgress?: (progress: number) => void
   ): Promise<T> {
-    // XHR, not fetch, because fetch has no upload-progress event — and
+    // XHR, not fetch, because fetch has no upload-progress event ,  and
     // FileUploadZone needs real progress for the 100GB+ files described in
     // docs/PROJECT_PLAN.md §6 step 1.
     return new Promise<T>((resolve, reject) => {
@@ -130,7 +130,7 @@ export class ApiClient {
     try {
       body = await response.json();
     } catch {
-      // body wasn't JSON — fall back to statusText below
+      // body wasn't JSON ,  fall back to statusText below
     }
     return {
       status: response.status,

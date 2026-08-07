@@ -15,7 +15,7 @@ public class AlignmentService : PipelineStepBase
         Order = 2,
         DisplayName = "Align to Reference Genome",
         ShortDescription = "Align raw sequencing reads to the reference genome",
-        LongExplanation = "Sequencing machines don't read DNA in order — they shatter it into millions of short fragments and read those. Alignment figures out where each fragment belongs on the human genome, like matching puzzle pieces to the picture on the box. If you uploaded BAM files, this step is already done and can be skipped.",
+        LongExplanation = "Sequencing machines don't read DNA in order ,  they shatter it into millions of short fragments and read those. Alignment figures out where each fragment belongs on the human genome, like matching puzzle pieces to the picture on the box. If you uploaded BAM files, this step is already done and can be skipped.",
         ToolName = "bwa-mem2 (DNA), STAR (RNA)",
         RequiredInputStepIds = new[] { PipelineStepIds.Upload },
         IsUploadStep = false,
@@ -97,7 +97,7 @@ public class AlignmentService : PipelineStepBase
     {
         var summary = new Dictionary<string, object> { ["skippedAlignment"] = true, ["reason"] = "BAMs uploaded directly to this step" };
         WriteSummary(patientId, summary);
-        return StepResult.Ok(StepId, "BAM inputs already present — nothing to align", GetOutputFiles(patientId), summary, DateTime.UtcNow - start);
+        return StepResult.Ok(StepId, "BAM inputs already present ,  nothing to align", GetOutputFiles(patientId), summary, DateTime.UtcNow - start);
     }
 
     public Task<StepResult> PassThroughBamsAsync(string patientId)

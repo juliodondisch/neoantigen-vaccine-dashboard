@@ -16,7 +16,7 @@ public class PeptidePair
 }
 
 /// <summary>
-/// Pure logic, no external tools or I/O — the C# version is authoritative;
+/// Pure logic, no external tools or I/O ,  the C# version is authoritative;
 /// keep behaviorally identical to python/scripts/generate_candidates.py.
 /// </summary>
 public class SlidingWindowGenerator
@@ -84,7 +84,7 @@ public class SlidingWindowGenerator
             {
                 var (wtStart, wtEnd) = ClampWindow(start, length, wildTypeSequence.Length);
                 if (wtEnd - wtStart != length)
-                    continue; // wild-type sequence too short at this offset (near a terminus) — skip rather than crash
+                    continue; // wild-type sequence too short at this offset (near a terminus) ,  skip rather than crash
 
                 var mutant = mutantSequence.Substring(start, length);
                 var wildType = wildTypeSequence.Substring(wtStart, length);

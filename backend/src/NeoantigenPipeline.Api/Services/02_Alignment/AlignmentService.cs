@@ -32,9 +32,14 @@ public class AlignmentService : PipelineStepBase
 
     public override ValidationResult ValidateInputs(string patientId)
     {
+        // BAMs uploaded directly into this step's own folder (e.g. test data that already
+        // arrives aligned) need neither step 1's output nor bwa-mem2/samtools.
+        if (HasOwnBams(patientId))
+            return ValidationResult.Valid();
+
         var result = ValidateRequiredSteps(patientId);
         if (CanSkip(patientId))
-            return ValidationResult.Valid(); // BAMs already provided; tools not needed
+            return ValidationResult.Valid(); // BAMs already provided via step 1; tools not needed
         foreach (var missing in Tools.GetMissingTools(Definition.RequiredTools))
             result.AddMissingTool(missing);
         return result;
@@ -43,6 +48,9 @@ public class AlignmentService : PipelineStepBase
     public override async Task<StepResult> RunAsync(string patientId, StepParameters parameters, CancellationToken ct = default)
     {
         var start = DateTime.UtcNow;
+
+        if (HasOwnBams(patientId))
+            return AlreadyHasBams(patientId, start);
 
         if (CanSkip(patientId))
             return await PassThroughBamsAsync(patientId);
@@ -78,6 +86,19 @@ public class AlignmentService : PipelineStepBase
     }
 
     public bool CanSkip(string patientId) => _uploadService.InputsAreBam(patientId);
+
+    /// <summary>True when BAMs were uploaded straight into 02_alignment itself
+    /// (via AlignmentPanel's own upload zone), bypassing step 1 entirely.</summary>
+    public bool HasOwnBams(string patientId) =>
+        Files.StepHasFilesMatching(patientId, StepId, "tumor_*.bam") &&
+        Files.StepHasFilesMatching(patientId, StepId, "normal_*.bam");
+
+    private StepResult AlreadyHasBams(string patientId, DateTime start)
+    {
+        var summary = new Dictionary<string, object> { ["skippedAlignment"] = true, ["reason"] = "BAMs uploaded directly to this step" };
+        WriteSummary(patientId, summary);
+        return StepResult.Ok(StepId, "BAM inputs already present — nothing to align", GetOutputFiles(patientId), summary, DateTime.UtcNow - start);
+    }
 
     public Task<StepResult> PassThroughBamsAsync(string patientId)
     {

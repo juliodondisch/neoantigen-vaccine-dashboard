@@ -67,6 +67,23 @@ public class FileSystemService
         var dir = _paths.EnsureStepDir(patientId, stepId);
         var ext = Path.GetExtension(file.FileName);
         var baseName = Path.GetFileNameWithoutExtension(file.FileName);
+
+        // BAMs are located downstream by glob (tumor_*.bam / normal_*.bam), not by
+        // original filename — canonicalize the base name by fileKind so a BAM uploaded
+        // as e.g. "sample1.bam" is still findable regardless of what the user named it.
+        // This applies whether the BAM lands in 01_upload or is uploaded directly into
+        // 02_alignment (skipping alignment entirely when the caller already has BAMs).
+        if (ext.Equals(".bam", StringComparison.OrdinalIgnoreCase))
+        {
+            baseName = fileKind switch
+            {
+                "tumor_dna" => "tumor",
+                "normal_dna" => "normal",
+                "rna" => "rna",
+                _ => baseName,
+            };
+        }
+
         var destName = $"{baseName}_{PathResolver.Timestamp()}{ext}";
         var destPath = Path.Combine(dir, destName);
 

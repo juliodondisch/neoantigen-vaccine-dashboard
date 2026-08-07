@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useCallback, useState, type FormEvent } from "react";
 import { Modal } from "@/components/common/Modal";
 import { Button } from "@/components/common/Button";
 import { usePatientStore } from "@/stores/usePatientStore";
@@ -30,10 +30,11 @@ export function CreatePatientModal({ isOpen, onClose, onCreated }: CreatePatient
     setNotes("");
   };
 
-  const handleClose = () => {
+  const handleClose = useCallback(() => {
     reset();
     onClose();
-  };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [onClose]);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();

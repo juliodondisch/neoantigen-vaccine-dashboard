@@ -4,6 +4,7 @@ import { useState } from "react";
 import { StepExplanation } from "../StepExplanation";
 import { StepRunButton } from "../StepRunButton";
 import { FileTable } from "../FileTable";
+import { FileUploadZone } from "../FileUploadZone";
 import { useStepFiles } from "@/hooks/useStepFiles";
 import { formatPercent } from "@/lib/utils/format";
 import type { StepDefinition, StepState } from "@/types/step";
@@ -31,6 +32,29 @@ export function AlignmentPanel({ patientId, definition, state }: PanelProps) {
           for those samples.
         </div>
       )}
+
+      <div className="grid grid-cols-1 gap-6 rounded-md border border-rule bg-surface p-6 md:grid-cols-2">
+        <FileUploadZone
+          patientId={patientId}
+          stepId={definition.id}
+          fileKind="tumor_dna"
+          label="Tumor BAM"
+          description="Already-aligned BAM — skip alignment for this sample"
+          acceptedExtensions={[".bam"]}
+          allowServerPath
+          onUploaded={refresh}
+        />
+        <FileUploadZone
+          patientId={patientId}
+          stepId={definition.id}
+          fileKind="normal_dna"
+          label="Normal BAM"
+          description="Already-aligned BAM — skip alignment for this sample"
+          acceptedExtensions={[".bam"]}
+          allowServerPath
+          onUploaded={refresh}
+        />
+      </div>
 
       <div className="flex items-end gap-6 rounded-md border border-rule bg-surface p-6">
         <label className="flex flex-col gap-1.5">

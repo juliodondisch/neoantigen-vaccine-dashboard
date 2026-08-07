@@ -10,16 +10,6 @@ interface StepSidebarProps {
   onSelectStep: (stepId: StepId) => void;
 }
 
-function isStepReachable(
-  definition: StepDefinition,
-  states: Record<StepId, StepState>
-): boolean {
-  if (definition.requiredInputStepIds.length === 0) return true;
-  return definition.requiredInputStepIds.every(
-    (id) => states[id]?.status === "Completed"
-  );
-}
-
 export function StepSidebar({
   definitions,
   states,
@@ -60,7 +50,7 @@ export function StepSidebar({
                   definition={definition}
                   state={state}
                   isSelected={selectedStepId === definition.id}
-                  isDisabled={!isStepReachable(definition, states)}
+                  isDisabled={false}
                   onClick={() => onSelectStep(definition.id)}
                 />
               </div>

@@ -22,9 +22,18 @@ const SIZE_CLASSES: Record<NonNullable<ModalProps["size"]>, string> = {
 export function Modal({ isOpen, onClose, title, children, footer, size = "md" }: ModalProps) {
   const closeRef = useRef<HTMLButtonElement>(null);
 
+  // Separate from the key-listener effect below: this one must only fire when the
+  // modal transitions open, not on every re-render where `onClose` gets a new
+  // identity (e.g. a parent recreating its close handler each render) — otherwise
+  // it steals focus back to the close button on every keystroke inside the modal.
   useEffect(() => {
     if (!isOpen) return;
     closeRef.current?.focus();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen]);
+
+  useEffect(() => {
+    if (!isOpen) return;
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
     };

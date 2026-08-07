@@ -25,6 +25,36 @@ step/common/dev components, all 11 step panels, both pages). `npm run build` and
 pass. Not yet exercised in an actual browser — no display available in this environment; only
 verified via production build + the backend endpoints it calls.
 
+## Second pass (2026-08-07, later) — verification without subagents
+
+Went through every endpoint by hand with curl plus `npm run dev`/`npm run build`/`npm run lint`,
+no subagents. Found and fixed two more real bugs:
+
+- **`FixtureSeeder.SeedVariantsAsync` wrote `somatic_pass_{ts}.vcf.gz.txt`** (plain text with a
+  `.txt` tail) while `ProteinEffectsService` looks for glob `somatic_pass_*.vcf.gz` — the
+  fixture would never actually be found by step 4. Now writes real gzip content with the
+  correct extension; verified with `gzip -dc` that it round-trips as a valid VCF.
+- **`isUserUploaded` reverted to `false` on every `GET .../files` call** after an upload,
+  because `FileSystemService.ToManagedFile` always hardcoded it — the flag was only ever
+  correct in the immediate upload response. Now inferred from file kind + step (tumor/normal/
+  rna files inside `01_upload`), so it survives re-listing.
+
+Confirmed working live (backend on :5163, frontend on :3000, real HTTP calls, not just builds):
+patient CRUD (create/list/update/delete), file upload/list/preview/download, `/api/tools` +
+`/api/tools/disk`, steps 1/6/7/8/9/10 running for real end to end, steps 2/3/4/5/11 correctly
+SKIPPED with a clear missing-tool message, `POST .../10_ranking/preview` (live slider endpoint),
+CORS from `localhost:3000` → `localhost:5163`, and all three frontend pages (`/`,
+`/patients/[id]`, `/dev/tests`) returning 200 with no server-side render errors.
+
+**Still genuinely unverified** (would need either a real browser or the missing bio tools):
+actual client-side rendering/interactivity in a browser (no display in this environment — only
+confirmed the HTML shell renders and the API it depends on is reachable with correct CORS/JSON
+shapes), and the five tool-gated steps' real CLI invocations (bwa-mem2/GATK/VEP/OptiType/
+pvacvector — none installed here, marked TEMP-PATCH, deferred to server pass per CLAUDE.md).
+
+`npm run lint`: 0 errors, 9 pre-existing warnings (React hooks exhaustive-deps / setState-in-
+effect style suggestions in polling hooks) — not fixed, non-blocking, cosmetic.
+
 ## Backend/frontend contract fixes made during integration
 
 - Enum JSON serialization (`StepStatus`, `JobStatus`) now uses `JsonStringEnumConverter` —

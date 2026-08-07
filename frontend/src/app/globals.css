@@ -1,26 +1,84 @@
 @import "tailwindcss";
+@config "../../tailwind.config.ts";
 
+@import "@fontsource/ibm-plex-sans/400.css";
+@import "@fontsource/ibm-plex-sans/500.css";
+@import "@fontsource/ibm-plex-sans/600.css";
+@import "@fontsource/ibm-plex-mono/400.css";
+@import "@fontsource/ibm-plex-mono/500.css";
+
+/* Appendix C.2 — design tokens as CSS custom properties, mirrored into the
+   Tailwind theme via tailwind.config.ts. Kept here too so components can
+   reference var(--color-*) directly (e.g. inline SVG chart fills). */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --color-ink: #12181b;
+  --color-slate: #5a666b;
+  --color-paper: #f6f7f6;
+  --color-surface: #ffffff;
+  --color-rule: #dde2e1;
+  --color-rule-strong: #c3cbca;
+
+  --color-accent: #403a7e;
+  --color-accent-hover: #4e4794;
+  --color-accent-muted: #e8e7f2;
+
+  --color-state-idle: #8c9599;
+  --color-state-blocked: #b07d2b;
+  --color-state-ready: #403a7e;
+  --color-state-complete: #2f6b4f;
+  --color-state-failed: #a33a3a;
+  --color-state-skipped: #a8afb2;
+
+  --color-success-bg: #edf4f0;
+  --color-error-bg: #f7eded;
+  --color-warning-bg: #f7f1e4;
+  --color-info-bg: #edf0f2;
+
+  --data-1: #0072b2;
+  --data-2: #d55e00;
+  --data-3: #009e73;
+  --data-4: #cc79a7;
+  --data-5: #e69f00;
+  --data-6: #56b4e9;
+
+  --score-0: #dde2e1;
+  --score-25: #b5b7cf;
+  --score-50: #8d8bb4;
+  --score-75: #66609a;
+  --score-100: #403a7e;
+
+  --font-sans: "IBM Plex Sans", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, monospace;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+* {
+  box-sizing: border-box;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html,
+body {
+  height: 100%;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--color-paper);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  font-size: 15px;
+  line-height: 1.55;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 1px;
 }

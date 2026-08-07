@@ -25,6 +25,7 @@ public class StepsController : ControllerBase
     }
 
     [HttpGet]
+    [HttpGet("/api/steps")] // non-patient-scoped alias: step definitions are patient-independent
     public ActionResult<List<StepDefinition>> ListDefinitions() => Ok(_registry.GetAllDefinitions());
 
     [HttpGet("states")]

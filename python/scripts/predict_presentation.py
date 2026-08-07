@@ -103,8 +103,16 @@ def main() -> None:
             predictions = predict_bigmhc_el(peptides, alleles, use_gpu=False)
             predictor_name = "bigmhc_el"
         else:
-            predictions = predict_mhcflurry(peptides, alleles)
-            predictor_name = "mhcflurry"
+            try:
+                predictions = predict_mhcflurry(peptides, alleles)
+                predictor_name = "mhcflurry"
+            except Exception as exc:  # noqa: BLE001
+                # mhcflurry is importable but its downloadable model weights aren't
+                # fetched on this machine (network/disk-constrained dev environment).
+                # Falls back to the specified stub predictor rather than crashing the step.
+                log(f"mhcflurry unavailable ({exc}); falling back to stub predictor")
+                predictions = predict_stub(peptides, alleles)
+                predictor_name = "stub"
 
         candidates = merge_predictions(candidates, predictions, predictor_name)
         candidates = score_wildtype_counterparts(candidates, "stub" if use_stub else predictor_name)

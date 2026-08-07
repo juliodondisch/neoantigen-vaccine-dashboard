@@ -65,7 +65,9 @@ builder.Services.AddSingleton<PatientRepository>();
 builder.Services.AddSingleton<JobManager>();
 builder.Services.AddSingleton<FixtureSeeder>();
 
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+        options.JsonSerializerOptions.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter()));
 builder.Services.AddOpenApi();
 
 builder.Services.AddCors(options =>

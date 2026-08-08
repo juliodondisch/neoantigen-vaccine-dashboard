@@ -47,9 +47,17 @@ def parse_args() -> argparse.Namespace:
 def run_pvacvector(peptides: list[str], alleles: list[str], output_dir: str) -> list[str]:
     tools = ToolConfig.from_env()
     tools.require("pvactools")
-    # Real invocation deferred to server pass (see module docstring); this call
-    # exists to fail loudly with a clear message when the tool genuinely isn't there.
-    raise RuntimeError("pvacvector invocation not yet verified against a real install (TEMP-PATCH).")
+    # Real invocation deferred to server pass (see module docstring). `pip install pvactools`
+    # alone is not enough to run this for real: pvacvector's junctional-epitope check calls
+    # out to IEDB's binding predictors (NetMHCpan/NetMHCIIpan), which require a separate,
+    # manually-registered download from DTU Health Tech (https://services.healthtech.dtu.dk) -
+    # not something a script can fetch programmatically. Install those, point pvactools at
+    # them per pvactools' own setup docs, then this call can be wired up for real.
+    raise RuntimeError(
+        "pvacvector invocation not yet verified against a real install (TEMP-PATCH). "
+        "Note: pvactools also needs IEDB's NetMHCpan/NetMHCIIpan installed separately "
+        "(manual registration required at DTU Health Tech) before this will work for real."
+    )
 
 
 def reverse_translate(peptide: str, codon_optimize: bool) -> str:

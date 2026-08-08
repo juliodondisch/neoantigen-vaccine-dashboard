@@ -49,13 +49,20 @@ public class VariantCallingService : PipelineStepBase
         var reference = parameters.GetString("referenceGenome") ?? "chr21_test";
         var outputVcf = Paths.BuildOutputPath(patientId, StepId, "somatic", ".vcf.gz");
 
+        // A panel of normals is recommended but optional for Mutect2. Only pass one through
+        // if it's actually on disk — passing a path that doesn't exist makes GATK hard-fail
+        // instead of just running without one, and we don't ship a PoN (it's a user-supplied
+        // or separately-downloaded resource, not something this app generates).
+        var ponPath = Paths.GetPanelOfNormals(reference);
+        var usePon = parameters.GetBool("usePanelOfNormals", true) && File.Exists(ponPath);
+
         var args = new Dictionary<string, string>
         {
             ["tumor-bam"] = tumorBam!,
             ["normal-bam"] = normalBam,
             ["reference"] = Paths.GetReferenceFasta(reference),
             ["output-vcf"] = outputVcf,
-            ["panel-of-normals"] = parameters.GetBool("usePanelOfNormals", true) ? Paths.GetPanelOfNormals(reference) : "",
+            ["panel-of-normals"] = usePon ? ponPath : "",
             ["intervals"] = parameters.GetString("intervals") ?? "",
             ["min-vaf"] = parameters.GetDouble("minVaf", 0.05).ToString("F2"),
         };

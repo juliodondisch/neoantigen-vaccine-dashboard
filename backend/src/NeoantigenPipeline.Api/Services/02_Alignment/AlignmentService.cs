@@ -8,6 +8,7 @@ public class AlignmentService : PipelineStepBase
 {
     public const string StepId = PipelineStepIds.Alignment;
     private readonly UploadService _uploadService;
+    private readonly ReferenceSetupService _referenceSetup;
 
     public override StepDefinition Definition { get; } = new()
     {
@@ -24,10 +25,12 @@ public class AlignmentService : PipelineStepBase
         RequiredTools = new[] { "bwa-mem2", "samtools" },
     };
 
-    public AlignmentService(PathResolver paths, FileSystemService files, PythonRunner python, ToolChecker tools, UploadService uploadService, ILogger<AlignmentService> logger)
+    public AlignmentService(PathResolver paths, FileSystemService files, PythonRunner python, ToolChecker tools,
+        UploadService uploadService, ReferenceSetupService referenceSetup, ILogger<AlignmentService> logger)
         : base(paths, files, python, tools, logger)
     {
         _uploadService = uploadService;
+        _referenceSetup = referenceSetup;
     }
 
     public override ValidationResult ValidateInputs(string patientId)
@@ -42,6 +45,18 @@ public class AlignmentService : PipelineStepBase
             return ValidationResult.Valid(); // BAMs already provided via step 1; tools not needed
         foreach (var missing in Tools.GetMissingTools(Definition.RequiredTools))
             result.AddMissingTool(missing);
+
+        // Fail fast rather than starting a job doomed to run out of disk partway through
+        // a multi-GB reference download; if there's room, just warn — Run will fetch it.
+        const string defaultGenome = "chr21_test";
+        if (!_referenceSetup.IsReady(defaultGenome))
+        {
+            var blocker = _referenceSetup.DescribeBlocker(defaultGenome);
+            if (blocker is not null)
+                result.AddError(blocker);
+            else
+                result.AddWarning($"Reference genome '{defaultGenome}' will be downloaded and indexed automatically on first run.");
+        }
         return result;
     }
 
@@ -57,6 +72,18 @@ public class AlignmentService : PipelineStepBase
 
         var dryRun = parameters.GetBool("dryRun", false);
         var threads = parameters.GetInt("threads", 4);
+        var reference = parameters.GetString("referenceGenome") ?? "chr21_test";
+        var needsRna = _uploadService.HasRnaSeq(patientId);
+
+        // Dry-run never touches the reference (align.py's dry_run_stub short-circuits before
+        // any file check), so only fetch/build the real thing when actually aligning.
+        if (!dryRun)
+        {
+            var (ready, refError) = await _referenceSetup.EnsureReferenceAsync(reference, needsRna, patientId, ct);
+            if (!ready)
+                return StepResult.Fail(StepId, $"Reference genome '{reference}' is not ready", refError);
+        }
+
         var results = new List<PythonResponse>();
 
         foreach (var sampleType in new[] { "tumor", "normal" })
@@ -65,7 +92,7 @@ public class AlignmentService : PipelineStepBase
             results.Add(response);
         }
 
-        if (_uploadService.HasRnaSeq(patientId))
+        if (needsRna)
         {
             results.Add(await AlignSampleAsync(patientId, "rna", isRna: true, parameters, ct));
         }

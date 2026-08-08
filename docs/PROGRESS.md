@@ -1,5 +1,59 @@
 # Progress
 
+## Third pass (2026-08-08) — deployment readiness for a real, offline server run
+
+The user clarified the target server has **no outbound network access at runtime** — every
+external fetch must happen once, ahead of time, during setup. Also asked for tool alternatives
+that don't need DTU Health Tech's gated academic registration, and BAM validation since their
+real workflow uploads externally-aligned BAMs directly (skipping step 2).
+
+**New: `setup_tools.py`** (repo root) — conda/bioconda installer for bwa-mem2, samtools, STAR,
+salmon, GATK4, OptiType, VEP, pvactools, run once on the server before anything else. Also
+fetches mhcflurry model weights and (by default now, since VEP database mode needs network)
+the VEP cache. `--include-bigmhc` best-effort clones BigMHC for step 8.
+
+**New: RNA expression quantification is implemented** (`python/scripts/quantify_expression.py`,
+Salmon quasi-mapping — doesn't need STAR/BAM, works directly off FASTQ). Previously this didn't
+exist at all; `FilteringService` now runs it automatically when RNA-seq was uploaded and no
+pre-made expression TSV exists. `setup_reference.py --include-rna` builds the Salmon index +
+tx2gene mapping (parsed straight from Ensembl cDNA FASTA headers — no separate GTF needed).
+
+**Steps 8 & 11 now attempt real (non-stub) predictors, with graceful fallback:**
+- Step 8: BigMHC (github.com/KarchinLab/bigmhc, no registration) instead of PRIME/NetMHCpan.
+  `predict_immunogenicity.py`'s `predict_bigmhc_im()` is genuinely unverified (BigMHC isn't
+  installed anywhere I could test) — any failure falls back to stub automatically, so this is
+  safe to ship but likely still silently stubs until debugged against a real install.
+- Step 11: `pvacvector` now attempts a real call using MHCflurry as the prediction algorithm
+  (also no registration) instead of unconditionally raising. Also unverified. Failure no longer
+  blocks vaccine design — the construct still gets built and exported, just without the
+  junctional-epitope check, and `junctionalEpitopeCheckRan` in the summary says honestly
+  whether it worked.
+- `VaccineDesignService.RequiredTools` relaxed to empty (construct assembly is native Python,
+  doesn't actually need pvactools) — was incorrectly hard-blocking on a tool it doesn't require.
+
+**New: BAM validation/repair** (`python/scripts/validate_bam.py` + `BamValidationService`) —
+runs automatically on every BAM that enters the pipeline via a skip-alignment path (uploaded
+directly to either 01_upload or 02_alignment). Checks `samtools quickcheck` integrity, `@RG SM:`
+tag correctness (fixes via `samtools addreplacerg` if wrong/missing), coordinate sort order
+(fixes via `samtools sort`), and index presence (builds if missing). Corrupt/unfixable BAMs now
+fail the alignment step with a clear message instead of surfacing as a cryptic Mutect2 error
+three steps later.
+
+**Offline-first default flip:** `UseVepDatabaseMode` / `ProteinEffectsService`'s
+`useDatabaseMode` now default to **false** (cache mode) everywhere — database mode queries
+Ensembl live over the network, which the target server doesn't have.
+
+**Bug fixed while auditing:** Mutect2 was always being passed `--panel-of-normals <path>` even
+when that file didn't exist (this app never ships a PoN), which would've made every real
+variant-calling run hard-fail on a missing file. Now only passed if actually present.
+
+**Genuinely still not automatable** (flagged honestly, not worked around):
+- NetMHCpan/NetMHCIIpan (DTU Health Tech gated registration) — avoided entirely by routing
+  steps 8/11 through BigMHC/MHCflurry instead, per the above.
+- BigMHC's pretrained weights still need manual download per its own README even with
+  `--include-bigmhc` (the script clones the repo, not the weights — no confident stable URL).
+- PRIME is not wired in (kept as an explicit "not installed" error, unlike BigMHC).
+
 ## Current state (2026-08-07)
 
 Full stack scaffolded and wired end-to-end: Next.js frontend, ASP.NET Core backend (all 11

@@ -25,6 +25,7 @@ builder.Services.AddSingleton<FileSystemService>();
 builder.Services.AddSingleton<PythonRunner>();
 builder.Services.AddSingleton<ToolChecker>();
 builder.Services.AddSingleton<ReferenceSetupService>();
+builder.Services.AddSingleton<BamValidationService>();
 
 // Steps ,  concrete registration needed because some services take others as constructor
 // dependencies (see docs/TECHNICAL_SPEC.md Appendix A). Register both the concrete type

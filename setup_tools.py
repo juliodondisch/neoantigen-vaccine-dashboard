@@ -34,6 +34,7 @@ What this script does NOT and CANNOT install (flagged clearly at the end):
 from __future__ import annotations
 
 import argparse
+import os
 import shutil
 import subprocess
 import sys
@@ -44,11 +45,14 @@ CONDA_PACKAGES = [
     "bioconda::bwa-mem2",
     "bioconda::samtools",
     "bioconda::star",
+    "bioconda::salmon",
     "bioconda::gatk4",
     "bioconda::optitype",
     "bioconda::ensembl-vep",
     "bioconda::pvactools",
 ]
+
+BIGMHC_REPO_URL = "https://github.com/KarchinLab/bigmhc.git"
 
 VEP_CACHE_PACKAGE = "bioconda::ensembl-vep"  # already installed above; --vep-cache just runs vep_install after
 
@@ -62,7 +66,14 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--env-name", default="neoantigen", help="conda environment name to create/update")
     p.add_argument("--dry-run", action="store_true", help="print the plan without installing anything")
     p.add_argument("--skip-models", action="store_true", help="skip mhcflurry model weight download")
-    p.add_argument("--vep-cache", action="store_true", help="also fetch the VEP cache (several GB; off by default, database mode is used instead)")
+    p.add_argument("--skip-vep-cache", action="store_true",
+                    help="skip the VEP cache (several GB). On by default: this app runs with no outbound "
+                         "network access at request time, so VEP's database mode (which queries Ensembl "
+                         "live) won't work — the cache is what makes VEP work offline.")
+    p.add_argument("--include-bigmhc", action="store_true",
+                    help="best-effort: git-clone BigMHC (github.com/KarchinLab/bigmhc) for step 8 "
+                         "immunogenicity prediction, so it doesn't need NetMHCpan/IEDB's gated registration "
+                         "the way the spec's default (PRIME) does. Unverified CLI — see predict_immunogenicity.py.")
     p.add_argument("--yes", action="store_true", help="don't prompt for confirmation before installing")
     return p.parse_args()
 
@@ -111,8 +122,9 @@ def main() -> None:
     for pkg in CONDA_PACKAGES:
         print(f"  - {pkg}")
     print(f"Conda environment: {args.env_name}")
-    print(f"VEP cache: {'yes (several GB)' if args.vep_cache else 'no (using database mode)'}")
+    print(f"VEP cache: {'skipped (VEP will not work without outbound network access)' if args.skip_vep_cache else 'yes (several GB — required for offline VEP)'}")
     print(f"mhcflurry model weights: {'skipped' if args.skip_models else 'yes (~200MB)'}")
+    print(f"BigMHC (step 8, no registration needed): {'yes (best-effort, unverified)' if args.include_bigmhc else 'no'}")
     print()
 
     if not args.yes and not args.dry_run:
@@ -143,10 +155,27 @@ def main() -> None:
             args.dry_run,
         )
 
-    if args.vep_cache:
+    if not args.skip_vep_cache:
         run(
             [conda_bin, "run", "-n", args.env_name, "vep_install", "-a", "cf", "-s", "homo_sapiens", "-y", "GRCh38", "--NO_HTSLIB"],
             args.dry_run,
+        )
+
+    if args.include_bigmhc:
+        bigmhc_dir = "tools/bigmhc"
+        if os.path.exists(bigmhc_dir):
+            print(f"{bigmhc_dir} already exists, skipping clone")
+        else:
+            run(["git", "clone", "--depth", "1", BIGMHC_REPO_URL, bigmhc_dir], args.dry_run)
+        requirements_path = os.path.join(bigmhc_dir, "requirements.txt")
+        if args.dry_run or os.path.exists(requirements_path):
+            run([conda_bin, "run", "-n", args.env_name, "pip", "install", "-r", requirements_path], args.dry_run)
+        else:
+            print(f"WARNING: {requirements_path} not found after clone — install BigMHC's dependencies by hand per its README")
+        print(
+            "NOTE: BigMHC's pretrained model weights are not bundled in the repo clone — "
+            "download them per the instructions at https://github.com/KarchinLab/bigmhc "
+            "(public, no registration, but not something this script can fetch blind)."
         )
 
     print()
@@ -164,15 +193,19 @@ Next steps:
        App:ToolPaths:bwa-mem2 = "<conda envs dir>/{args.env_name}/bin/bwa-mem2"
        (...and similarly for samtools, STAR, gatk4, OptiTypePipeline.py, vep, pvacvector)
 
-  2. Download the reference genome + build its bwa-mem2 index (separate script,
+  2. Download the reference genome + build its bwa-mem2 index, and (if you want
+     real expression filtering) the Salmon transcriptome index (separate script,
      separate disk budget):
        conda run -n {args.env_name} python3 python/scripts/setup_reference.py \\
-           --genome GRCh38 --output-dir data/references/GRCh38
+           --genome GRCh38 --output-dir data/references/GRCh38 --include-rna
 
-  3. Still NOT covered by this script (manual steps, see this file's docstring):
+  3. Still NOT fully automatable (manual steps, see this file's docstring):
        - NetMHCpan/NetMHCIIpan for pvactools' full function (DTU Health Tech,
-         requires academic registration — https://services.healthtech.dtu.dk)
-       - BigMHC or PRIME for real (non-stub) step 8 immunogenicity scoring
+         requires academic registration — https://services.healthtech.dtu.dk).
+         design_vaccine.py now defaults to MHCflurry-based prediction instead,
+         which avoids this, but it's unverified against a real install.
+       - BigMHC's pretrained weights (if you passed --include-bigmhc, the repo
+         is cloned but the weights still need fetching per its own README).
 """
     )
 

@@ -26,7 +26,7 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--input-vcf", required=True)
     p.add_argument("--output-vcf", required=True)
     p.add_argument("--output-tsv", required=True)
-    p.add_argument("--use-database", default="true")
+    p.add_argument("--use-database", default="false")  # this app runs with no outbound network access at runtime; cache mode is required
     p.add_argument("--cache-dir", default="")
     p.add_argument("--keep-consequences", default=",".join(DEFAULT_KEEP))
     return p.parse_args()

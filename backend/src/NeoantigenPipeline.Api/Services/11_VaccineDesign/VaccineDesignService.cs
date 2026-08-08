@@ -41,12 +41,16 @@ public class VaccineDesignService : PipelineStepBase
         DisplayName = "Design Vaccine Sequence",
         ShortDescription = "Assemble selected targets into a synthesizable mRNA construct",
         LongExplanation = "This assembles the final selected targets into a single mRNA sequence ,  the actual blueprint a lab would synthesize. The chosen fragments are strung together with short connector sequences between them, wrapped in standard start and end elements that help cells read the instructions properly. The output is a sequence file, not a physical vaccine; manufacturing requires specialized facilities and regulatory approval.",
-        ToolName = "pVACvector",
+        ToolName = "pVACvector (junctional-epitope check; optional — construct assembly itself is native)",
         RequiredInputStepIds = new[] { PipelineStepIds.Ranking },
         IsUploadStep = false,
         HasParameters = true,
         ProducesDownload = true,
-        RequiredTools = new[] { "pvacvector" },
+        // Not hard-gated on pvacvector: design_vaccine.py's construct assembly (linkers,
+        // UTRs, codon table) is native Python with no external dependency; pvacvector only
+        // adds an optional junctional-epitope safety check and degrades gracefully if
+        // missing (see design_vaccine.py's run_pvacvector docstring).
+        RequiredTools = Array.Empty<string>(),
     };
 
     public VaccineDesignService(PathResolver paths, FileSystemService files, PythonRunner python, ToolChecker tools,

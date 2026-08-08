@@ -42,6 +42,14 @@ public class ReferenceSetupService
         return File.Exists(fasta) && File.Exists(bwaIndexMarker);
     }
 
+    public string GetSalmonIndexDir(string genome) => Path.Combine(_paths.GetReferenceDir(genome), "salmon_index");
+    public string GetTx2GenePath(string genome) => Path.Combine(_paths.GetReferenceDir(genome), "tx2gene.tsv");
+
+    /// <summary>Whether the Salmon transcriptome index + tx2gene mapping (step 9's expression
+    /// quantification) are ready — independent of the DNA/bwa-mem2 side of the reference.</summary>
+    public bool IsRnaReferenceReady(string genome) =>
+        File.Exists(Path.Combine(GetSalmonIndexDir(genome), "info.json")) && File.Exists(GetTx2GenePath(genome));
+
     public long EstimateRequiredBytes(string genome) =>
         RequiredBytesByGenome.TryGetValue(genome, out var bytes) ? bytes : RequiredBytesByGenome["GRCh38"];
 
@@ -68,9 +76,9 @@ public class ReferenceSetupService
     /// <summary>Downloads and indexes the reference if missing, checking disk space first.
     /// Long-running (a full GRCh38 fetch+index can take well over an hour) — callers should
     /// only invoke this from an async job, not a synchronous request.</summary>
-    public async Task<(bool Ready, string? Error)> EnsureReferenceAsync(string genome, bool includeStar, string patientId, CancellationToken ct)
+    public async Task<(bool Ready, string? Error)> EnsureReferenceAsync(string genome, bool includeRna, string patientId, CancellationToken ct)
     {
-        if (IsReady(genome))
+        if (IsReady(genome) && (!includeRna || IsRnaReferenceReady(genome)))
             return (true, null);
 
         var blocker = DescribeBlocker(genome);
@@ -81,7 +89,7 @@ public class ReferenceSetupService
         {
             ["genome"] = genome,
             ["output-dir"] = _paths.GetReferenceDir(genome),
-            ["include-star"] = includeStar ? "true" : "false",
+            ["include-rna"] = includeRna ? "true" : "false",
         };
 
         try

@@ -14,6 +14,8 @@ class ToolConfig:
     vep: str = "vep"
     optitype: str = "OptiTypePipeline.py"
     pvactools: str = "pvacseq"
+    salmon: str = "salmon"
+    bigmhc: str = "bigmhc_predict"  # not a real installed binary name; see BIGMHC_HOME handling in predict_immunogenicity.py
 
     @classmethod
     def from_env(cls) -> "ToolConfig":
@@ -25,6 +27,8 @@ class ToolConfig:
             vep=os.environ.get("TOOL_VEP", "vep"),
             optitype=os.environ.get("TOOL_OPTITYPE", "OptiTypePipeline.py"),
             pvactools=os.environ.get("TOOL_PVACTOOLS", "pvacseq"),
+            salmon=os.environ.get("TOOL_SALMON", "salmon"),
+            bigmhc=os.environ.get("TOOL_BIGMHC", "bigmhc_predict"),
         )
 
     def check_available(self, tool_name: str) -> bool:

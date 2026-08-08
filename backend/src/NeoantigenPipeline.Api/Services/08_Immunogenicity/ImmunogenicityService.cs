@@ -36,15 +36,20 @@ public class ImmunogenicityService : PipelineStepBase
         var start = DateTime.UtcNow;
         var presentationFile = RequireLatestFile(patientId, PipelineStepIds.Presentation, "presentation_*.tsv", "Presentation-scored candidates");
         var outputTsv = Paths.BuildOutputPath(patientId, StepId, "immunogenicity", ".tsv");
-        var predictor = parameters.GetString("predictor", "stub") ?? "stub";
+        // Default to attempting BigMHC-IM (github.com/KarchinLab/bigmhc, no registration
+        // needed — see setup_tools.py --include-bigmhc) rather than gating on ToolChecker:
+        // it isn't a PATH binary (it's a cloned repo script), and predict_immunogenicity.py
+        // already checks for it and falls back to stub internally if it's not installed, so
+        // there's no crash risk in always trying it first.
+        var predictor = parameters.GetString("predictor", "bigmhc_im") ?? "bigmhc_im";
         var useGpu = parameters.GetBool("useGpu", false);
-        var useStub = predictor == "stub" || !Tools.IsAvailable(predictor);
+        var useStub = predictor == "stub";
 
         var args = new Dictionary<string, string>
         {
             ["candidates-tsv"] = presentationFile,
             ["output-tsv"] = outputTsv,
-            ["predictor"] = useStub ? "stub" : predictor,
+            ["predictor"] = predictor,
             ["use-gpu"] = useGpu ? "true" : "false",
             ["use-stub"] = useStub ? "true" : "false",
         };

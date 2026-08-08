@@ -9,6 +9,7 @@ public class AlignmentService : PipelineStepBase
     public const string StepId = PipelineStepIds.Alignment;
     private readonly UploadService _uploadService;
     private readonly ReferenceSetupService _referenceSetup;
+    private readonly BamValidationService _bamValidation;
 
     public override StepDefinition Definition { get; } = new()
     {
@@ -26,11 +27,12 @@ public class AlignmentService : PipelineStepBase
     };
 
     public AlignmentService(PathResolver paths, FileSystemService files, PythonRunner python, ToolChecker tools,
-        UploadService uploadService, ReferenceSetupService referenceSetup, ILogger<AlignmentService> logger)
+        UploadService uploadService, ReferenceSetupService referenceSetup, BamValidationService bamValidation, ILogger<AlignmentService> logger)
         : base(paths, files, python, tools, logger)
     {
         _uploadService = uploadService;
         _referenceSetup = referenceSetup;
+        _bamValidation = bamValidation;
     }
 
     public override ValidationResult ValidateInputs(string patientId)
@@ -65,10 +67,15 @@ public class AlignmentService : PipelineStepBase
         var start = DateTime.UtcNow;
 
         if (HasOwnBams(patientId))
+        {
+            var ownBamsError = await ValidateBamsInPlaceAsync(patientId, StepId, ct);
+            if (ownBamsError is not null)
+                return StepResult.Fail(StepId, "Uploaded BAM failed validation", ownBamsError);
             return AlreadyHasBams(patientId, start);
+        }
 
         if (CanSkip(patientId))
-            return await PassThroughBamsAsync(patientId);
+            return await PassThroughBamsAsync(patientId, ct);
 
         var dryRun = parameters.GetBool("dryRun", false);
         var threads = parameters.GetInt("threads", 4);
@@ -127,7 +134,7 @@ public class AlignmentService : PipelineStepBase
         return StepResult.Ok(StepId, "BAM inputs already present ,  nothing to align", GetOutputFiles(patientId), summary, DateTime.UtcNow - start);
     }
 
-    public Task<StepResult> PassThroughBamsAsync(string patientId)
+    public async Task<StepResult> PassThroughBamsAsync(string patientId, CancellationToken ct = default)
     {
         var start = DateTime.UtcNow;
         var uploaded = Files.ListStepFiles(patientId, PipelineStepIds.Upload)
@@ -140,10 +147,34 @@ public class AlignmentService : PipelineStepBase
             File.Copy(src, dest);
         }
 
+        var validationError = await ValidateBamsInPlaceAsync(patientId, StepId, ct);
+        if (validationError is not null)
+            return StepResult.Fail(StepId, "Uploaded BAM failed validation", validationError);
+
         var summary = new Dictionary<string, object> { ["skippedAlignment"] = true, ["reason"] = "Inputs already aligned (BAM upload)" };
         WriteSummary(patientId, summary);
-        var result = StepResult.Ok(StepId, "Inputs were already aligned; BAMs passed through", GetOutputFiles(patientId), summary, DateTime.UtcNow - start);
-        return Task.FromResult(result);
+        return StepResult.Ok(StepId, "Inputs were already aligned; BAMs passed through", GetOutputFiles(patientId), summary, DateTime.UtcNow - start);
+    }
+
+    /// <summary>Runs validate_bam.py against every tumor_*/normal_*.bam currently in this
+    /// step's folder, replacing any that needed a fix (bad @RG SM:, wrong sort order, missing
+    /// index) with the repaired copy. Returns an error message if a BAM is unfixably broken,
+    /// or null if everything is valid (with or without in-place fixes).</summary>
+    private async Task<string?> ValidateBamsInPlaceAsync(string patientId, string stepId, CancellationToken ct)
+    {
+        var dir = Paths.GetStepDir(patientId, stepId);
+        foreach (var (glob, sampleName) in new[] { ("tumor_*.bam", "tumor"), ("normal_*.bam", "normal") })
+        {
+            var bam = Files.FindLatestFile(patientId, stepId, glob);
+            if (bam is null)
+                continue;
+
+            var bamPath = Path.Combine(dir, bam.Name);
+            var outcome = await _bamValidation.ValidateAndFixAsync(bamPath, sampleName, dir, patientId, ct);
+            if (!outcome.Success)
+                return $"'{bam.Name}': {outcome.Error}";
+        }
+        return null;
     }
 
     private Dictionary<string, string> BuildPythonArgs(string patientId, string sampleType, StepParameters parameters)

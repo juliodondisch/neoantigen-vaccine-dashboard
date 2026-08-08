@@ -61,7 +61,7 @@ public class ProteinEffectsService : PipelineStepBase
         var inputVcf = RequireLatestFile(patientId, PipelineStepIds.Variants, "somatic_pass_*.vcf.gz", "PASS-filtered VCF");
         var outputVcf = Paths.BuildOutputPath(patientId, StepId, "annotated", ".vcf.gz");
         var outputTsv = Paths.BuildOutputPath(patientId, StepId, "protein_altering", ".tsv");
-        var useDatabase = parameters.GetBool("useDatabaseMode", true);
+        var useDatabase = parameters.GetBool("useDatabaseMode", false); // no outbound network at runtime; VEP cache mode is required
         var keep = parameters.Get<string[]>("keepConsequences") ?? KeptConsequences;
 
         var args = new Dictionary<string, string>

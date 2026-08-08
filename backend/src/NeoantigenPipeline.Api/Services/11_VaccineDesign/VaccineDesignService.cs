@@ -90,7 +90,7 @@ public class VaccineDesignService : PipelineStepBase
 
         try
         {
-            var response = await Python.RunAndParseAsync("design_vaccine.py", args, new PythonExecutionOptions { TimeoutSeconds = 600, CancellationToken = ct });
+            var response = await Python.RunAndParseAsync("design_vaccine.py", args, new PythonExecutionOptions { TimeoutSeconds = 600, CancellationToken = ct }, patientId: patientId);
             WriteSummary(patientId, response.Summary);
             return BuildResult(patientId, response, DateTime.UtcNow - start);
         }

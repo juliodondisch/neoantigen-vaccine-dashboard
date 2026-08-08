@@ -11,11 +11,13 @@ namespace NeoantigenPipeline.Api.Controllers;
 public class PatientsController : ControllerBase
 {
     private readonly PatientRepository _repository;
+    private readonly PatientLogger _patientLog;
     private readonly ILogger<PatientsController> _logger;
 
-    public PatientsController(PatientRepository repository, ILogger<PatientsController> logger)
+    public PatientsController(PatientRepository repository, PatientLogger patientLog, ILogger<PatientsController> logger)
     {
         _repository = repository;
+        _patientLog = patientLog;
         _logger = logger;
     }
 
@@ -65,6 +67,14 @@ public class PatientsController : ControllerBase
         if (patient is null)
             return NotFound(ApiError(404, $"Patient '{patientId}' not found"));
         return Ok(await _repository.BuildSummaryAsync(patient));
+    }
+
+    [HttpGet("{patientId}/log")]
+    public async Task<ActionResult<string>> GetLog(string patientId, [FromQuery] int maxLines = 2000)
+    {
+        if (!await _repository.ExistsAsync(patientId))
+            return NotFound(ApiError(404, $"Patient '{patientId}' not found"));
+        return Content(_patientLog.ReadTail(patientId, maxLines), "text/plain");
     }
 
     private static object ApiError(int status, string message, string? detail = null) => new { status, message, detail };

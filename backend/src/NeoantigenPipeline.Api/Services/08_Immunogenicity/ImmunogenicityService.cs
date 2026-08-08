@@ -51,7 +51,7 @@ public class ImmunogenicityService : PipelineStepBase
 
         try
         {
-            var response = await Python.RunAndParseAsync("predict_immunogenicity.py", args, new PythonExecutionOptions { TimeoutSeconds = 600, CancellationToken = ct });
+            var response = await Python.RunAndParseAsync("predict_immunogenicity.py", args, new PythonExecutionOptions { TimeoutSeconds = 600, CancellationToken = ct }, patientId: patientId);
             WriteSummary(patientId, response.Summary);
             return BuildResult(patientId, response, DateTime.UtcNow - start);
         }

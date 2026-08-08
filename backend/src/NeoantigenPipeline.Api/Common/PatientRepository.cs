@@ -9,13 +9,15 @@ public class PatientRepository
     private readonly PathResolver _paths;
     private readonly FileSystemService _files;
     private readonly StepRegistry _registry;
+    private readonly PatientLogger _patientLog;
     private readonly SemaphoreSlim _writeLock = new(1, 1);
 
-    public PatientRepository(PathResolver paths, FileSystemService files, StepRegistry registry)
+    public PatientRepository(PathResolver paths, FileSystemService files, StepRegistry registry, PatientLogger patientLog)
     {
         _paths = paths;
         _files = files;
         _registry = registry;
+        _patientLog = patientLog;
     }
 
     public Task<List<PatientSummary>> ListAsync()
@@ -63,6 +65,7 @@ public class PatientRepository
 
         _paths.EnsurePatientSkeleton(patient.Id);
         await SaveAsync(patient);
+        _patientLog.Info(patient.Id, "patient", $"Created patient '{patient.Name}' (cancerType={patient.CancerType ?? "unspecified"}, referenceGenome={patient.ReferenceGenome})");
         return patient;
     }
 

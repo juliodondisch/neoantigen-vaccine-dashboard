@@ -20,6 +20,7 @@ builder.Services.AddSingleton(sp => sp.GetRequiredService<Microsoft.Extensions.O
 
 // Infrastructure (singleton ,  stateless)
 builder.Services.AddSingleton<PathResolver>();
+builder.Services.AddSingleton<PatientLogger>();
 builder.Services.AddSingleton<FileSystemService>();
 builder.Services.AddSingleton<PythonRunner>();
 builder.Services.AddSingleton<ToolChecker>();

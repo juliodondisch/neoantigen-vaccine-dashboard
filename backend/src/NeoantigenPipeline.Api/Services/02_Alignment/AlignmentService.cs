@@ -147,7 +147,7 @@ public class AlignmentService : PipelineStepBase
         if (isRna) args["rna"] = "true";
         try
         {
-            return await Python.RunAndParseAsync("align.py", args, new PythonExecutionOptions { TimeoutSeconds = 7200, CancellationToken = ct });
+            return await Python.RunAndParseAsync("align.py", args, new PythonExecutionOptions { TimeoutSeconds = 7200, CancellationToken = ct }, patientId: patientId);
         }
         catch (Common.Exceptions.PythonExecutionException ex)
         {

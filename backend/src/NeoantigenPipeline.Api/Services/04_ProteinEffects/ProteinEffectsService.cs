@@ -76,7 +76,7 @@ public class ProteinEffectsService : PipelineStepBase
 
         try
         {
-            var response = await Python.RunAndParseAsync("annotate_effects.py", args, new PythonExecutionOptions { TimeoutSeconds = 1800, CancellationToken = ct });
+            var response = await Python.RunAndParseAsync("annotate_effects.py", args, new PythonExecutionOptions { TimeoutSeconds = 1800, CancellationToken = ct }, patientId: patientId);
             WriteSummary(patientId, response.Summary);
             return BuildResult(patientId, response, DateTime.UtcNow - start);
         }

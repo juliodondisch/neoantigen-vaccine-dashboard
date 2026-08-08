@@ -28,34 +28,52 @@ public class PythonRunner
 {
     private readonly AppConfig _config;
     private readonly PathResolver _paths;
+    private readonly PatientLogger _patientLog;
     private readonly ILogger<PythonRunner> _logger;
 
-    public PythonRunner(AppConfig config, PathResolver paths, ILogger<PythonRunner> logger)
+    public PythonRunner(AppConfig config, PathResolver paths, PatientLogger patientLog, ILogger<PythonRunner> logger)
     {
         _config = config;
         _paths = paths;
+        _patientLog = patientLog;
         _logger = logger;
     }
 
-    public async Task<PythonExecutionResult> RunAsync(string scriptName, Dictionary<string, string> args, PythonExecutionOptions? options = null)
+    public async Task<PythonExecutionResult> RunAsync(string scriptName, Dictionary<string, string> args, PythonExecutionOptions? options = null, string? patientId = null)
     {
         var scriptPath = _paths.GetPythonScript(scriptName);
         var commandParts = new List<string> { _config.PythonExecutable, scriptPath };
         foreach (var (key, value) in args)
         {
-            // Omit the flag entirely when unset, rather than passing an empty value , 
+            // Omit the flag entirely when unset, rather than passing an empty value -
             // argparse options are typed (str/bool) and an empty positional breaks parsing.
             if (string.IsNullOrEmpty(value))
                 continue;
             commandParts.Add($"--{key}");
             commandParts.Add(value);
         }
-        return await RunRawAsync(commandParts.ToArray(), options);
+
+        if (patientId is not null)
+            _patientLog.Info(patientId, scriptName, $"Invoking: {string.Join(' ', commandParts.Skip(1))}");
+
+        var result = await RunRawAsync(commandParts.ToArray(), options);
+
+        if (patientId is not null)
+        {
+            if (result.TimedOut)
+                _patientLog.Error(patientId, scriptName, $"Timed out after {result.Duration.TotalSeconds:F1}s");
+            else if (result.ExitCode != 0)
+                _patientLog.Error(patientId, scriptName, $"Exited {result.ExitCode} after {result.Duration.TotalSeconds:F1}s: {Tail(result.Stderr)}");
+            else
+                _patientLog.Info(patientId, scriptName, $"Exited 0 after {result.Duration.TotalSeconds:F1}s");
+        }
+
+        return result;
     }
 
-    public async Task<PythonResponse> RunAndParseAsync(string scriptName, Dictionary<string, string> args, PythonExecutionOptions? options = null)
+    public async Task<PythonResponse> RunAndParseAsync(string scriptName, Dictionary<string, string> args, PythonExecutionOptions? options = null, string? patientId = null)
     {
-        var result = await RunAsync(scriptName, args, options);
+        var result = await RunAsync(scriptName, args, options, patientId);
         if (!result.Success)
         {
             throw new Exceptions.PythonExecutionException(scriptName, result.ExitCode, result.Stderr);
@@ -63,8 +81,18 @@ public class PythonRunner
 
         if (!PythonResponse.TryParse(result.Stdout, out var response) || response is null)
         {
-            throw new Exceptions.PythonExecutionException(scriptName, result.ExitCode,
-                $"Script exited 0 but produced no parseable JSON block. Stdout tail: {Tail(result.Stdout)}");
+            var detail = $"Script exited 0 but produced no parseable JSON block. Stdout tail: {Tail(result.Stdout)}";
+            if (patientId is not null)
+                _patientLog.Error(patientId, scriptName, detail);
+            throw new Exceptions.PythonExecutionException(scriptName, result.ExitCode, detail);
+        }
+
+        if (patientId is not null)
+        {
+            if (response.Success)
+                _patientLog.Info(patientId, scriptName, $"Response: {response.Message}");
+            else
+                _patientLog.Warning(patientId, scriptName, $"Response reported failure: {response.Error}");
         }
 
         return response;

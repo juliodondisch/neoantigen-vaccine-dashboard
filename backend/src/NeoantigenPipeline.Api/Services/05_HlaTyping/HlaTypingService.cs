@@ -92,7 +92,7 @@ public class HlaTypingService : PipelineStepBase
 
         try
         {
-            var response = await Python.RunAndParseAsync("type_hla.py", args, new PythonExecutionOptions { TimeoutSeconds = 600, CancellationToken = ct });
+            var response = await Python.RunAndParseAsync("type_hla.py", args, new PythonExecutionOptions { TimeoutSeconds = 600, CancellationToken = ct }, patientId: patientId);
             var duration = DateTime.UtcNow - start;
             WriteSummary(patientId, response.Summary);
             return BuildResult(patientId, response, duration);

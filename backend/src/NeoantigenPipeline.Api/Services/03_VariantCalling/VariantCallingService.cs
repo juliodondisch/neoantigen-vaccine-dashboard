@@ -62,7 +62,7 @@ public class VariantCallingService : PipelineStepBase
 
         try
         {
-            var response = await Python.RunAndParseAsync("call_variants.py", args, new PythonExecutionOptions { TimeoutSeconds = 7200, CancellationToken = ct });
+            var response = await Python.RunAndParseAsync("call_variants.py", args, new PythonExecutionOptions { TimeoutSeconds = 7200, CancellationToken = ct }, patientId: patientId);
             WriteSummary(patientId, response.Summary);
             return BuildResult(patientId, response, DateTime.UtcNow - start);
         }

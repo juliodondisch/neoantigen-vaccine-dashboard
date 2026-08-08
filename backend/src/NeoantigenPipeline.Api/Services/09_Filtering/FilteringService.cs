@@ -66,7 +66,7 @@ public class FilteringService : PipelineStepBase
 
         try
         {
-            var response = await Python.RunAndParseAsync("filter_candidates.py", args, new PythonExecutionOptions { TimeoutSeconds = 600, CancellationToken = ct });
+            var response = await Python.RunAndParseAsync("filter_candidates.py", args, new PythonExecutionOptions { TimeoutSeconds = 600, CancellationToken = ct }, patientId: patientId);
             WriteSummary(patientId, response.Summary);
             return BuildResult(patientId, response, DateTime.UtcNow - start);
         }

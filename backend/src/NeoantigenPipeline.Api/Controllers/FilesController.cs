@@ -11,12 +11,14 @@ public class FilesController : ControllerBase
 {
     private readonly FileSystemService _files;
     private readonly PathResolver _paths;
+    private readonly PatientLogger _patientLog;
     private readonly ILogger<FilesController> _logger;
 
-    public FilesController(FileSystemService files, PathResolver paths, ILogger<FilesController> logger)
+    public FilesController(FileSystemService files, PathResolver paths, PatientLogger patientLog, ILogger<FilesController> logger)
     {
         _files = files;
         _paths = paths;
+        _patientLog = patientLog;
         _logger = logger;
     }
 
@@ -33,7 +35,9 @@ public class FilesController : ControllerBase
         var uploaded = new List<ManagedFile>();
         foreach (var file in files)
         {
-            uploaded.Add(await _files.SaveUploadAsync(patientId, stepId, file, fileKind));
+            var saved = await _files.SaveUploadAsync(patientId, stepId, file, fileKind);
+            uploaded.Add(saved);
+            _patientLog.Info(patientId, stepId, $"Uploaded '{saved.Name}' ({saved.SizeBytes} bytes, kind={fileKind ?? "unspecified"})");
         }
         return Ok(new UploadResponse { Success = true, UploadedFiles = uploaded });
     }
@@ -44,10 +48,12 @@ public class FilesController : ControllerBase
         try
         {
             var registered = await _files.RegisterExternalFileAsync(patientId, stepId, request.SourcePath, request.FileKind, request.Copy);
+            _patientLog.Info(patientId, stepId, $"Registered external path '{request.SourcePath}' -> '{registered.Name}' (copy={request.Copy})");
             return Ok(new UploadResponse { Success = true, UploadedFiles = new List<ManagedFile> { registered } });
         }
         catch (FileNotFoundException ex)
         {
+            _patientLog.Warning(patientId, stepId, $"Register path failed for '{request.SourcePath}': {ex.Message}");
             return BadRequest(new UploadResponse { Success = false, Error = ex.Message });
         }
     }
@@ -58,6 +64,7 @@ public class FilesController : ControllerBase
         try
         {
             var stream = _files.OpenRead(patientId, stepId, fileName);
+            _patientLog.Info(patientId, stepId, $"Downloaded '{fileName}'");
             return File(stream, "application/octet-stream", fileName);
         }
         catch (FileNotFoundException)
@@ -77,8 +84,13 @@ public class FilesController : ControllerBase
     }
 
     [HttpDelete("{fileName}")]
-    public ActionResult Delete(string patientId, string stepId, string fileName) =>
-        _files.DeleteFile(patientId, stepId, fileName) ? NoContent() : NotFound();
+    public ActionResult Delete(string patientId, string stepId, string fileName)
+    {
+        var deleted = _files.DeleteFile(patientId, stepId, fileName);
+        if (deleted)
+            _patientLog.Warning(patientId, stepId, $"Deleted '{fileName}'");
+        return deleted ? NoContent() : NotFound();
+    }
 }
 
 public class RegisterFileRequest

@@ -1,5 +1,42 @@
 # Progress
 
+## Fourth pass (2026-08-08) — AWS deployment: runtimes, config, network, docs
+
+Before this, `setup_tools.py` only installed bioinformatics tools — .NET/Node.js/conda itself
+weren't covered, `appsettings.json` shipped with an absolute `/data` path nobody had actually
+run against, CORS was hardcoded to `localhost:3000` only, and there was no deploy doc.
+
+- **`setup_tools.py`** now checks-then-installs conda itself (Miniforge, Linux only — the
+  actual deploy target), .NET SDK (via Microsoft's official `dotnet-install.sh`), and Node.js
+  (`conda-forge::nodejs`, added to the same env so architecture detection is conda's problem,
+  not a raw-binary-URL guess). Fully idempotent — safe to re-run.
+- **`appsettings.json` (tracked) is now the real, working config** — no more relying on the
+  gitignored `appsettings.Development.json` to make paths resolve. Verified live with
+  `dotnet run --no-launch-profile` (bypassing `launchSettings.json`'s dev-environment default):
+  `Hosting environment: Production`, dev endpoints correctly 404, patient CRUD works, relative
+  data/python paths resolve correctly from a clean environment.
+- **CORS is now configurable** (`App:AllowedOrigins`, plumbed through `AppConfig` and read
+  directly off `IConfiguration` in `Program.cs` since it's needed before DI is built). Default
+  still `localhost:3000` (works transparently over an SSH tunnel — the recommended access path,
+  documented in `DEPLOY.md`); direct public access is supported via an env var override.
+- **Found and fixed a real bug while writing `DEPLOY.md`'s register-in-place example:**
+  `RegisterExternalFileAsync`'s `copy: false` path (the one meant for 140-240GB BAMs too big to
+  duplicate) kept the file's original name verbatim instead of the canonical `tumor_*`/`normal_*`
+  naming the rest of the pipeline globs for — so a registered BAM not already named that way
+  would be silently invisible to `AlignmentService.HasOwnBams` and variant calling. Fixed by
+  symlinking into the step folder under the canonical name (still zero-copy) instead of
+  recording the bare original path. Verified live with a file named
+  `weird_original_name_123.bam` → correctly appears as `tumor_{ts}.bam`, resolves through the
+  symlink to the real (un-copied) content.
+- Also fixed: `.env.local.example` (frontend) was gitignored by the blanket `.env*` rule and
+  never actually committed, despite being referenced as the setup template — README/DEPLOY
+  instructions to `cp .env.local.example .env.local` would have failed on a fresh clone. Added
+  a `.gitignore` negation and committed it (no secrets in it — just the three `NEXT_PUBLIC_*` vars).
+- **New: `README.md`** (doc map, local quick start) **and `DEPLOY.md`** (full AWS sequence:
+  install → configure tool paths via env vars → download reference → start both processes →
+  access from another machine via SSH tunnel or direct → verify with fixture seeding before
+  touching real data → register real BAMs).
+
 ## Third pass (2026-08-08) — deployment readiness for a real, offline server run
 
 The user clarified the target server has **no outbound network access at runtime** — every

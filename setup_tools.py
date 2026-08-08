@@ -1,43 +1,53 @@
 #!/usr/bin/env python3
-"""Install every bioinformatics tool this pipeline needs, in one shot.
+"""Install everything this app needs to run, in one shot: conda itself (if missing),
+.NET SDK, Node.js, and every bioinformatics tool the pipeline calls out to.
 
 Run this ONCE on the machine that will actually execute the pipeline (the
 cloud server) — not on a disk-constrained dev laptop. It does not touch
 patient data or reference genomes; see python/scripts/setup_reference.py for
 that (and run it separately, after this).
 
-    python3 setup_tools.py                  # install everything into a new conda env
+    python3 setup_tools.py                  # check everything, install what's missing
     python3 setup_tools.py --dry-run         # show the plan without installing anything
     python3 setup_tools.py --env-name myenv  # custom conda env name
 
-Why conda instead of downloading raw binaries: bwa-mem2/samtools/STAR/GATK4/
-OptiType/VEP are compiled tools with real transitive dependencies (htslib,
-Java, Perl modules, razers3, R, ...) that differ by platform. There is no
-single stable "prebuilt binary" URL for all of them the way there is for a
-plain source download, and guessing per-platform binary URLs is exactly what
-CLAUDE.md's "do not guess external interfaces" rule warns against. conda's
-bioconda channel is the standard, actually-maintained distribution mechanism
-for this exact toolset — it's also the path docs/PROJECT_PLAN.md's own open
-questions section pointed at ("Conda environments are the lighter
-alternative [to Docker]").
+Every check below follows the same pattern: is it already there (and good
+enough)? If so, skip it. If not, install it. Safe to re-run any time.
+
+Why conda for the bioinformatics tools instead of downloading raw binaries:
+bwa-mem2/samtools/STAR/GATK4/OptiType/VEP are compiled tools with real
+transitive dependencies (htslib, Java, Perl modules, razers3, R, ...) that
+differ by platform. There is no single stable "prebuilt binary" URL for all
+of them the way there is for a plain source download, and guessing
+per-platform binary URLs is exactly what CLAUDE.md's "do not guess external
+interfaces" rule warns against. conda's bioconda channel is the standard,
+actually-maintained distribution mechanism for this exact toolset — it's also
+the path docs/PROJECT_PLAN.md's own open questions section pointed at
+("Conda environments are the lighter alternative [to Docker]"). Node.js is
+installed the same way (conda-forge::nodejs) so architecture detection
+(x86_64 vs. arm64/Graviton) is handled by conda rather than guessed here.
+
+.NET is the one piece NOT installed via conda — Microsoft's own
+dotnet-install.sh is the canonical, architecture-aware installer and is more
+reliable than any conda-forge .NET package.
 
 What this script does NOT and CANNOT install (flagged clearly at the end):
   - NetMHCpan/NetMHCIIpan for pvactools' full function — DTU Health Tech
     requires manual academic registration; there's no programmatic download.
-  - BigMHC / PRIME for step 8 immunogenicity — no simple package exists;
-    the pipeline runs on its stub predictor until/unless these are wired in
-    by hand.
-  - The VEP cache (several GB) — off by default; database mode (VEP querying
-    Ensembl over the network) is used instead, per docs/TECHNICAL_SPEC.md's
-    own Tier-1 guidance. Pass --vep-cache to fetch it if you want offline VEP.
+    Steps 8/11 route around this via BigMHC/MHCflurry instead (see below).
+  - BigMHC's pretrained model weights (--include-bigmhc clones the repo, but
+    the weights need fetching per its own README — no confident stable URL).
+  - PRIME for step 8 immunogenicity — not wired in at all.
 """
 from __future__ import annotations
 
 import argparse
 import os
+import platform
 import shutil
 import subprocess
 import sys
+import urllib.request
 
 # Packages come from bioconda (+ conda-forge for shared deps); these are the
 # standard, actively-maintained conda package names for each tool.
@@ -50,15 +60,21 @@ CONDA_PACKAGES = [
     "bioconda::optitype",
     "bioconda::ensembl-vep",
     "bioconda::pvactools",
+    "conda-forge::nodejs>=20",
 ]
 
 BIGMHC_REPO_URL = "https://github.com/KarchinLab/bigmhc.git"
 
-VEP_CACHE_PACKAGE = "bioconda::ensembl-vep"  # already installed above; --vep-cache just runs vep_install after
+MINIFORGE_BASE_URL = "https://github.com/conda-forge/miniforge/releases/latest/download"
+MINIFORGE_INSTALL_DIR = os.path.expanduser("~/miniforge3")
 
-# Conda env with all of the above (mostly GATK's JDK, VEP's Perl stack, and
-# OptiType's razers3/HDF5 deps) — generous estimate, checked before starting.
-REQUIRED_FREE_GB = 10
+DOTNET_INSTALL_DIR = os.path.expanduser("~/.dotnet")
+DOTNET_CHANNEL = "10.0"
+DOTNET_MIN_MAJOR = 10
+
+# Conda env with all of the above (mostly GATK's JDK, VEP's Perl stack, Node,
+# and OptiType's razers3/HDF5 deps) — generous estimate, checked before starting.
+REQUIRED_FREE_GB = 12
 
 
 def parse_args() -> argparse.Namespace:
@@ -78,33 +94,6 @@ def parse_args() -> argparse.Namespace:
     return p.parse_args()
 
 
-def find_conda() -> str:
-    for candidate in ("mamba", "conda"):
-        path = shutil.which(candidate)
-        if path:
-            return candidate
-    print(
-        "Neither `conda` nor `mamba` found on PATH.\n"
-        "Install Miniforge first (includes conda + the bioconda/conda-forge channels\n"
-        "pre-configured), then re-run this script:\n"
-        "  https://github.com/conda-forge/miniforge#miniforge3\n",
-        file=sys.stderr,
-    )
-    sys.exit(1)
-
-
-def check_disk_space(required_gb: int) -> None:
-    free_gb = shutil.disk_usage(".").free / (1024**3)
-    if free_gb < required_gb:
-        print(
-            f"Not enough free disk space: need ~{required_gb}GB for the tool environment, "
-            f"have {free_gb:.1f}GB free. Aborting before downloading anything.",
-            file=sys.stderr,
-        )
-        sys.exit(1)
-    print(f"Disk check OK: {free_gb:.1f}GB free (need ~{required_gb}GB).")
-
-
 def run(cmd: list[str], dry_run: bool) -> None:
     print(f"$ {' '.join(cmd)}")
     if dry_run:
@@ -115,10 +104,107 @@ def run(cmd: list[str], dry_run: bool) -> None:
         sys.exit(result.returncode)
 
 
+def _ensure_path_export(export_line: str, label: str) -> None:
+    rc_path = os.path.expanduser("~/.bashrc")
+    existing = open(rc_path).read() if os.path.exists(rc_path) else ""
+    if export_line in existing:
+        print(f"{label}: PATH already configured in {rc_path}")
+        return
+    with open(rc_path, "a") as fh:
+        fh.write(f"\n# Added by setup_tools.py for {label}\n{export_line}\n")
+    print(f"{label}: added to {rc_path} — run `source ~/.bashrc` (or start a new shell) to pick it up")
+
+
+# --- conda ------------------------------------------------------------------
+
+def find_conda() -> str | None:
+    for candidate in ("mamba", "conda"):
+        path = shutil.which(candidate)
+        if path:
+            return candidate
+    candidate = os.path.join(MINIFORGE_INSTALL_DIR, "bin", "conda")
+    return candidate if os.path.exists(candidate) else None
+
+
+def install_conda(dry_run: bool) -> str:
+    machine = platform.machine().lower()
+    arch = "aarch64" if machine in ("arm64", "aarch64") else "x86_64"
+    system = platform.system()
+    if system != "Linux":
+        print(f"Miniforge auto-install only handles Linux; detected {system}. "
+              "Install conda yourself: https://github.com/conda-forge/miniforge#miniforge3", file=sys.stderr)
+        sys.exit(1)
+
+    installer_url = f"{MINIFORGE_BASE_URL}/Miniforge3-{system}-{arch}.sh"
+    installer_path = "/tmp/miniforge_install.sh"
+    print(f"conda/mamba not found — installing Miniforge from {installer_url}")
+    if dry_run:
+        print(f"$ curl -sSL {installer_url} -o {installer_path} && bash {installer_path} -b -p {MINIFORGE_INSTALL_DIR}")
+        return os.path.join(MINIFORGE_INSTALL_DIR, "bin", "conda")
+
+    urllib.request.urlretrieve(installer_url, installer_path)
+    run(["bash", installer_path, "-b", "-p", MINIFORGE_INSTALL_DIR], dry_run=False)
+    _ensure_path_export(f'export PATH="{MINIFORGE_INSTALL_DIR}/bin:$PATH"', "conda")
+    return os.path.join(MINIFORGE_INSTALL_DIR, "bin", "conda")
+
+
+# --- .NET SDK -----------------------------------------------------------------
+
+def find_dotnet() -> str | None:
+    path = shutil.which("dotnet")
+    if path:
+        return path
+    candidate = os.path.join(DOTNET_INSTALL_DIR, "dotnet")
+    return candidate if os.path.exists(candidate) else None
+
+
+def dotnet_version_ok(dotnet_path: str) -> bool:
+    try:
+        result = subprocess.run([dotnet_path, "--version"], capture_output=True, text=True, timeout=10)
+        major = int(result.stdout.strip().split(".")[0])
+        return major >= DOTNET_MIN_MAJOR
+    except Exception:  # noqa: BLE001
+        return False
+
+
+def install_dotnet(dry_run: bool) -> None:
+    print(f"Installing .NET SDK (channel {DOTNET_CHANNEL}) to {DOTNET_INSTALL_DIR}...")
+    script_url = "https://dot.net/v1/dotnet-install.sh"
+    script_path = "/tmp/dotnet-install.sh"
+    if dry_run:
+        print(f"$ curl -sSL {script_url} -o {script_path} && bash {script_path} --channel {DOTNET_CHANNEL} --install-dir {DOTNET_INSTALL_DIR}")
+        return
+    urllib.request.urlretrieve(script_url, script_path)
+    os.chmod(script_path, 0o755)
+    run([script_path, "--channel", DOTNET_CHANNEL, "--install-dir", DOTNET_INSTALL_DIR], dry_run=False)
+    _ensure_path_export(f'export PATH="{DOTNET_INSTALL_DIR}:$PATH"', "dotnet")
+
+
+# --- main ---------------------------------------------------------------------
+
 def main() -> None:
     args = parse_args()
 
-    print("Packages to install (bioconda/conda-forge):")
+    print("=" * 72)
+    print("Checking runtimes (conda, .NET SDK) and planning bioconda packages")
+    print("=" * 72)
+
+    conda_bin = find_conda()
+    if conda_bin:
+        print(f"conda/mamba: found at {conda_bin}")
+    else:
+        conda_bin = install_conda(args.dry_run)
+
+    dotnet_path = find_dotnet()
+    if dotnet_path and dotnet_version_ok(dotnet_path):
+        print(f"dotnet: found at {dotnet_path} (>= {DOTNET_MIN_MAJOR}.0)")
+    else:
+        if dotnet_path:
+            print(f"dotnet found at {dotnet_path} but is older than {DOTNET_MIN_MAJOR}.0 — installing a current SDK")
+        install_dotnet(args.dry_run)
+
+    print()
+    print("Conda packages to install (bioconda/conda-forge — includes Node.js):")
     for pkg in CONDA_PACKAGES:
         print(f"  - {pkg}")
     print(f"Conda environment: {args.env_name}")
@@ -133,7 +219,6 @@ def main() -> None:
             print("Aborted.")
             return
 
-    conda_bin = "conda" if args.dry_run else find_conda()
     if not args.dry_run:
         check_disk_space(REQUIRED_FREE_GB)
 
@@ -184,30 +269,34 @@ def main() -> None:
     print("=" * 72)
     print(
         f"""
-Next steps:
-  1. Point the backend at this conda env's binaries. Get the env's bin path with:
+Next steps: see DEPLOY.md for the full sequence. Short version:
+  1. If conda/dotnet were just installed, run `source ~/.bashrc` (or open a new shell).
+  2. Point the backend at this conda env's tool binaries — get paths with:
        conda run -n {args.env_name} which bwa-mem2
-     Then set each tool's path in backend's appsettings (App:ToolPaths) or
-     PythonExecutable to that env's `python3`/tool binaries, e.g.:
-       App:PythonExecutable = "<conda envs dir>/{args.env_name}/bin/python3"
-       App:ToolPaths:bwa-mem2 = "<conda envs dir>/{args.env_name}/bin/bwa-mem2"
-       (...and similarly for samtools, STAR, gatk4, OptiTypePipeline.py, vep, pvacvector)
-
-  2. Download the reference genome + build its bwa-mem2 index, and (if you want
-     real expression filtering) the Salmon transcriptome index (separate script,
-     separate disk budget):
+     Set them via environment variables (see DEPLOY.md), e.g.:
+       export App__PythonExecutable="$(conda run -n {args.env_name} which python3)"
+       export App__ToolPaths__bwa-mem2="$(conda run -n {args.env_name} which bwa-mem2)"
+  3. Download the reference genome + build its bwa-mem2 index, and (if you want
+     real expression filtering) the Salmon transcriptome index:
        conda run -n {args.env_name} python3 python/scripts/setup_reference.py \\
            --genome GRCh38 --output-dir data/references/GRCh38 --include-rna
-
-  3. Still NOT fully automatable (manual steps, see this file's docstring):
-       - NetMHCpan/NetMHCIIpan for pvactools' full function (DTU Health Tech,
-         requires academic registration — https://services.healthtech.dtu.dk).
-         design_vaccine.py now defaults to MHCflurry-based prediction instead,
-         which avoids this, but it's unverified against a real install.
-       - BigMHC's pretrained weights (if you passed --include-bigmhc, the repo
-         is cloned but the weights still need fetching per its own README).
+  4. Still NOT fully automatable (manual steps, see this file's docstring):
+       - NetMHCpan/NetMHCIIpan for pvactools' full function (gated registration)
+       - BigMHC's pretrained weights (if using --include-bigmhc)
 """
     )
+
+
+def check_disk_space(required_gb: int) -> None:
+    free_gb = shutil.disk_usage(".").free / (1024**3)
+    if free_gb < required_gb:
+        print(
+            f"Not enough free disk space: need ~{required_gb}GB for the tool environment, "
+            f"have {free_gb:.1f}GB free. Aborting before downloading anything.",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+    print(f"Disk check OK: {free_gb:.1f}GB free (need ~{required_gb}GB).")
 
 
 if __name__ == "__main__":

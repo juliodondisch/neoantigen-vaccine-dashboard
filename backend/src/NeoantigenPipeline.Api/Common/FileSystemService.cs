@@ -66,24 +66,7 @@ public class FileSystemService
     {
         var dir = _paths.EnsureStepDir(patientId, stepId);
         var ext = Path.GetExtension(file.FileName);
-        var baseName = Path.GetFileNameWithoutExtension(file.FileName);
-
-        // BAMs are located downstream by glob (tumor_*.bam / normal_*.bam), not by
-        // original filename ,  canonicalize the base name by fileKind so a BAM uploaded
-        // as e.g. "sample1.bam" is still findable regardless of what the user named it.
-        // This applies whether the BAM lands in 01_upload or is uploaded directly into
-        // 02_alignment (skipping alignment entirely when the caller already has BAMs).
-        if (ext.Equals(".bam", StringComparison.OrdinalIgnoreCase))
-        {
-            baseName = fileKind switch
-            {
-                "tumor_dna" => "tumor",
-                "normal_dna" => "normal",
-                "rna" => "rna",
-                _ => baseName,
-            };
-        }
-
+        var baseName = CanonicalBaseName(Path.GetFileNameWithoutExtension(file.FileName), fileKind, ext);
         var destName = $"{baseName}_{PathResolver.Timestamp()}{ext}";
         var destPath = Path.Combine(dir, destName);
 
@@ -118,10 +101,17 @@ public class FileSystemService
         }
         else
         {
-            // Registered in place: recorded via a pointer manifest rather than moved,
-            // since source files may be far too large to copy (150GB+ WGS files).
-            managed = ToManagedFile(new FileInfo(sourcePath), stepId);
-            managed.RelativePath = sourcePath;
+            // Registered in place via a symlink rather than a copy — the source may be far
+            // too large to duplicate (150GB+ WGS files) — but still needs to land in the step
+            // folder under the canonical tumor_*/normal_* name everything downstream globs
+            // for; a bare pointer to the original path (whatever it happened to be named)
+            // wouldn't be discoverable by AlignmentService.HasOwnBams or VariantCallingService.
+            var ext = Path.GetExtension(sourcePath);
+            var baseName = CanonicalBaseName(Path.GetFileNameWithoutExtension(sourcePath), fileKind, ext);
+            var linkName = $"{baseName}_{PathResolver.Timestamp()}{ext}";
+            var linkPath = Path.Combine(dir, linkName);
+            File.CreateSymbolicLink(linkPath, Path.GetFullPath(sourcePath));
+            managed = ToManagedFile(new FileInfo(linkPath), stepId);
         }
 
         managed.FileKind = fileKind ?? InferFileKind(sourcePath);
@@ -217,10 +207,30 @@ public class FileSystemService
         ModifiedAt = info.LastWriteTimeUtc,
         Extension = info.Extension,
         FileKind = InferFileKind(info.Name),
-        // Not persisted metadata ,  approximated from file kind, since only the upload
-        // step's tumor/normal/rna files are ever user-supplied rather than pipeline-generated.
-        IsUserUploaded = InferFileKind(info.Name) is "tumor_dna" or "normal_dna" or "rna" && stepId == PipelineStepIds.Upload,
+        // Not persisted metadata — approximated from file kind, since tumor/normal/rna files
+        // are only ever user-supplied (via 01_upload, or a direct-BAM registration into
+        // 02_alignment that skips alignment), never pipeline-generated under those names.
+        IsUserUploaded = InferFileKind(info.Name) is "tumor_dna" or "normal_dna" or "rna" &&
+            stepId is PipelineStepIds.Upload or PipelineStepIds.Alignment,
     };
+
+    /// <summary>BAMs are located downstream by glob (tumor_*.bam / normal_*.bam), not by
+    /// original filename — canonicalize the base name by fileKind so a BAM supplied as e.g.
+    /// "sample1.bam" is still findable regardless of what it was originally named. Used by
+    /// both direct uploads and in-place (symlinked) registration.</summary>
+    private static string CanonicalBaseName(string originalBaseName, string? fileKind, string extension)
+    {
+        if (!extension.Equals(".bam", StringComparison.OrdinalIgnoreCase))
+            return originalBaseName;
+
+        return fileKind switch
+        {
+            "tumor_dna" => "tumor",
+            "normal_dna" => "normal",
+            "rna" => "rna",
+            _ => originalBaseName,
+        };
+    }
 
     private static string? InferFileKind(string fileName)
     {

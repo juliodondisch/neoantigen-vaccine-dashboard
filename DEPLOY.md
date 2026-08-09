@@ -18,6 +18,20 @@ real, since no bioinformatics tools fit on the machine this was built on).
   were aligned against a differently-named GRCh38 build (e.g. NCBI's no-alt analysis set,
   `1`/`2`/... naming), variant calling will misbehave — you'd need to either re-align against
   this reference or point `setup_reference.py`/`PathResolver` at a matching one instead.
+- **Allocate an Elastic IP (or equivalent static address) before doing anything else.** A plain
+  instance's public IP changes on every stop/start, which otherwise means re-editing
+  `frontend/.env.local`, `App:AllowedOrigins`, and `next.config.ts`'s dev origin each time —
+  `scripts/set-host.sh <ip>` updates the first and third in one command once you have a stable
+  address (see step 5b).
+- **Security group**: open inbound 22 (SSH), and either just 22 (tunnel-only access, §5a) or
+  22 + 3000 + 5163 (direct access, §5b — keep 5163 restricted to your own IP if you can, no
+  reason to expose the API beyond what the frontend needs).
+- **Use `git clone` to get the repo onto the server**, not a zip transfer — a zip export
+  (or `scp -r`) easily drags along `node_modules/`, `.next/`, and macOS's `__MACOSX/` cruft. If
+  you must transfer directly, `rsync --exclude-from=.gitignore` from the repo root.
+- **Run backend/frontend under `tmux`/`screen`, or as systemd units.** A dropped SSH session
+  kills any foreground process it started — `nohup ... &` works but is easy to forget. `tmux`
+  is the path of least surprise: `tmux new -s backend`, run the command, `Ctrl-b d` to detach.
 
 ## 1. Clone and install everything
 
@@ -34,6 +48,12 @@ python3 setup_tools.py             # installs conda (if missing), .NET SDK (if m
 
 If conda or .NET were just installed, run `source ~/.bashrc` (or open a new shell) before
 continuing. Everything else lives inside the conda env (`neoantigen` by default).
+
+`global.json` at the repo root pins the .NET SDK version the backend's `.slnx` solution file
+needs (`.slnx` requires .NET 9+; an older SDK fails with `MSB4068: The element <Solution> is
+unrecognized`). `setup_tools.py` installs a matching SDK automatically — if you ever see that
+error, it means a different/older `dotnet` is earlier on `PATH` than the one it installed to
+`~/.dotnet`.
 
 ## 2. Point the app at the conda env's tools
 
@@ -77,6 +97,10 @@ also trigger this automatically on first run if it detects the reference is miss
 enough disk space — but running it explicitly first lets you watch it happen and catch problems
 before kicking off a real patient run.
 
+Check what's actually in place any time via `GET /api/tools/references?genome=GRCh38`
+(fasta/index, RNA/Salmon index, coding intervals, panel of normals — each reported
+present/missing) rather than inferring it from a failed run partway through.
+
 ## 4. Start the app
 
 ```bash
@@ -108,7 +132,7 @@ changes are needed.
 
 ### Option B — direct access via the instance's public address
 
-Needs three changes:
+Needs three changes — `scripts/set-host.sh <ip-or-hostname>` does the first and third for you:
 
 1. Open the port in your security group (3000 for the frontend; keep 5163 restricted to your IP
    if possible — no reason to expose the API publicly beyond what the frontend needs).
@@ -116,13 +140,15 @@ Needs three changes:
    ```bash
    export App__AllowedOrigins__0="http://<instance-public-ip-or-domain>:3000"
    ```
-3. Tell the frontend where the backend actually is (edit `frontend/.env.local`):
+3. Tell the frontend where the backend actually is, and what origin it should accept dev
+   requests from (`scripts/set-host.sh` writes both into `frontend/.env.local`):
    ```
    NEXT_PUBLIC_API_BASE_URL=http://<instance-public-ip-or-domain>:5163
+   NEXT_PUBLIC_DEV_ORIGIN=http://<instance-public-ip-or-domain>:3000
    ```
 
 Rebuild/restart the frontend after changing `.env.local` (`NEXT_PUBLIC_*` vars are baked in at
-build time).
+build time), and restart the backend after setting `App__AllowedOrigins__0`.
 
 ## 6. Verify before touching real data
 

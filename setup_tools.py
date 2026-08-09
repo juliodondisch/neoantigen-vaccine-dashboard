@@ -61,6 +61,12 @@ CONDA_PACKAGES = [
     "bioconda::ensembl-vep",
     "bioconda::pvactools",
     "conda-forge::nodejs>=20",
+    # tk: pvacseq imports the stdlib `turtle` module (for a plotting feature), which needs
+    # Tk bindings that a minimal Python build doesn't include — found missing on a fresh
+    # Amazon Linux 2023 install (docs/CORRECTION_PLAN.md §9.1).
+    "conda-forge::tk",
+    # glpk: the ILP solver OptiType's pyomo layer calls out to for allele-pair optimization.
+    "conda-forge::glpk",
 ]
 
 BIGMHC_REPO_URL = "https://github.com/KarchinLab/bigmhc.git"

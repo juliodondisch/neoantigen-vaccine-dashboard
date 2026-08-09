@@ -26,9 +26,11 @@ public class RankingService : PipelineStepBase
         RequiredTools = Array.Empty<string>(),
     };
 
-    public RankingService(PathResolver paths, FileSystemService files, PythonRunner python, ToolChecker tools,
+    public override string[] PrimaryOutputPatterns => new[] { "ranked_*.tsv" };
+
+    public RankingService(PathResolver paths, FileSystemService files, PythonRunner python, ToolChecker tools, AppConfig config,
         FilteringService filteringService, HlaTypingService hlaService, ILogger<RankingService> logger)
-        : base(paths, files, python, tools, logger)
+        : base(paths, files, python, tools, config, logger)
     {
         _filteringService = filteringService;
         _hlaService = hlaService;

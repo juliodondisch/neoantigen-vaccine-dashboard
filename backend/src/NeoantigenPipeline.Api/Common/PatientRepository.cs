@@ -10,14 +10,16 @@ public class PatientRepository
     private readonly FileSystemService _files;
     private readonly StepRegistry _registry;
     private readonly PatientLogger _patientLog;
+    private readonly AppConfig _config;
     private readonly SemaphoreSlim _writeLock = new(1, 1);
 
-    public PatientRepository(PathResolver paths, FileSystemService files, StepRegistry registry, PatientLogger patientLog)
+    public PatientRepository(PathResolver paths, FileSystemService files, StepRegistry registry, PatientLogger patientLog, AppConfig config)
     {
         _paths = paths;
         _files = files;
         _registry = registry;
         _patientLog = patientLog;
+        _config = config;
     }
 
     public Task<List<PatientSummary>> ListAsync()
@@ -58,7 +60,7 @@ public class PatientRepository
             Name = request.Name,
             Notes = request.Notes,
             CancerType = request.CancerType,
-            ReferenceGenome = request.ReferenceGenome ?? "chr21_test",
+            ReferenceGenome = request.ReferenceGenome ?? _config.DefaultReferenceGenome,
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow,
         };

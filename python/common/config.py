@@ -16,6 +16,7 @@ class ToolConfig:
     pvactools: str = "pvacseq"
     salmon: str = "salmon"
     bigmhc: str = "bigmhc_predict"  # not a real installed binary name; see BIGMHC_HOME handling in predict_immunogenicity.py
+    mhcflurry: str = "mhcflurry-predict"
 
     @classmethod
     def from_env(cls) -> "ToolConfig":
@@ -29,6 +30,7 @@ class ToolConfig:
             pvactools=os.environ.get("TOOL_PVACTOOLS", "pvacseq"),
             salmon=os.environ.get("TOOL_SALMON", "salmon"),
             bigmhc=os.environ.get("TOOL_BIGMHC", "bigmhc_predict"),
+            mhcflurry=os.environ.get("TOOL_MHCFLURRY", "mhcflurry-predict"),
         )
 
     def check_available(self, tool_name: str) -> bool:

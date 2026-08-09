@@ -27,9 +27,11 @@ public class CandidateGenerationService : PipelineStepBase
         RequiredTools = Array.Empty<string>(),
     };
 
-    public CandidateGenerationService(PathResolver paths, FileSystemService files, PythonRunner python, ToolChecker tools,
+    public override string[] PrimaryOutputPatterns => new[] { "candidates_*.tsv" };
+
+    public CandidateGenerationService(PathResolver paths, FileSystemService files, PythonRunner python, ToolChecker tools, AppConfig config,
         ProteinEffectsService effectsService, HlaTypingService hlaService, ILogger<CandidateGenerationService> logger)
-        : base(paths, files, python, tools, logger)
+        : base(paths, files, python, tools, config, logger)
     {
         _effectsService = effectsService;
         _hlaService = hlaService;

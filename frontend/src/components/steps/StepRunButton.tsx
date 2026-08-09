@@ -75,6 +75,11 @@ export function StepRunButton({
       {disabled && disabledReason && (
         <span className="text-small text-slate">{disabledReason}</span>
       )}
+      {isRunning && activeJob?.logTail && (
+        <pre className="max-h-40 overflow-auto whitespace-pre-wrap break-words rounded-md bg-paper p-2 font-mono text-small text-slate">
+          {activeJob.logTail}
+        </pre>
+      )}
     </div>
   );
 }

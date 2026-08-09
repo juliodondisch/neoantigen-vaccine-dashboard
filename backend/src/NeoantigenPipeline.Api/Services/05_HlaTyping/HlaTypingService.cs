@@ -36,8 +36,10 @@ public class HlaTypingService : PipelineStepBase
         RequiredTools = new[] { "OptiType" },
     };
 
-    public HlaTypingService(PathResolver paths, FileSystemService files, PythonRunner python, ToolChecker tools, ILogger<HlaTypingService> logger)
-        : base(paths, files, python, tools, logger)
+    public override string[] PrimaryOutputPatterns => new[] { "hla_*.json" };
+
+    public HlaTypingService(PathResolver paths, FileSystemService files, PythonRunner python, ToolChecker tools, AppConfig config, ILogger<HlaTypingService> logger)
+        : base(paths, files, python, tools, config, logger)
     {
     }
 
@@ -92,7 +94,7 @@ public class HlaTypingService : PipelineStepBase
 
         try
         {
-            var response = await Python.RunAndParseAsync("type_hla.py", args, new PythonExecutionOptions { TimeoutSeconds = 600, CancellationToken = ct }, patientId: patientId);
+            var response = await Python.RunAndParseAsync("type_hla.py", args, new PythonExecutionOptions { TimeoutSeconds = Config.GetStepTimeout(StepId), CancellationToken = ct }, patientId: patientId);
             var duration = DateTime.UtcNow - start;
             WriteSummary(patientId, response.Summary);
             return BuildResult(patientId, response, duration);

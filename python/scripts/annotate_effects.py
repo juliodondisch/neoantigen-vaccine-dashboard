@@ -34,7 +34,11 @@ def parse_args() -> argparse.Namespace:
 
 def run_vep(input_vcf: str, output_vcf: str, use_database: bool, cache_dir: str | None) -> None:
     tools = ToolConfig.from_env()
-    cmd = [tools.require("vep"), "-i", input_vcf, "-o", output_vcf, "--vcf"]
+    # output_vcf is always named *.vcf.gz by the caller (PathResolver.BuildOutputPath); VEP
+    # does not compress its output by default, which used to leave a "annotated_*.vcf.gz" file
+    # that was actually plain text — zcat/gzip (and io_utils.read_vcf below) correctly rejected
+    # it (docs/CORRECTION_PLAN.md §5.6). --compress_output bgzip makes the name honest.
+    cmd = [tools.require("vep"), "-i", input_vcf, "-o", output_vcf, "--vcf", "--compress_output", "bgzip"]
     cmd += ["--database"] if use_database else ["--cache", "--dir_cache", cache_dir or ""]
     io_utils.run_command(cmd, "VEP annotation")
 

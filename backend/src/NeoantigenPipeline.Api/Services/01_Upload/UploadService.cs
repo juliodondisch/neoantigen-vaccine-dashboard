@@ -33,8 +33,8 @@ public class UploadService : PipelineStepBase
         RequiredTools = Array.Empty<string>(),
     };
 
-    public UploadService(PathResolver paths, FileSystemService files, PythonRunner python, ToolChecker tools, ILogger<UploadService> logger)
-        : base(paths, files, python, tools, logger)
+    public UploadService(PathResolver paths, FileSystemService files, PythonRunner python, ToolChecker tools, AppConfig config, ILogger<UploadService> logger)
+        : base(paths, files, python, tools, config, logger)
     {
     }
 

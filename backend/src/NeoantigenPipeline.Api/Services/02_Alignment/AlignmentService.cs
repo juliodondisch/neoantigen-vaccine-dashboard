@@ -26,9 +26,11 @@ public class AlignmentService : PipelineStepBase
         RequiredTools = new[] { "bwa-mem2", "samtools" },
     };
 
-    public AlignmentService(PathResolver paths, FileSystemService files, PythonRunner python, ToolChecker tools,
+    public override string[] PrimaryOutputPatterns => new[] { "tumor_*.bam", "normal_*.bam" };
+
+    public AlignmentService(PathResolver paths, FileSystemService files, PythonRunner python, ToolChecker tools, AppConfig config,
         UploadService uploadService, ReferenceSetupService referenceSetup, BamValidationService bamValidation, ILogger<AlignmentService> logger)
-        : base(paths, files, python, tools, logger)
+        : base(paths, files, python, tools, config, logger)
     {
         _uploadService = uploadService;
         _referenceSetup = referenceSetup;
@@ -50,7 +52,7 @@ public class AlignmentService : PipelineStepBase
 
         // Fail fast rather than starting a job doomed to run out of disk partway through
         // a multi-GB reference download; if there's room, just warn — Run will fetch it.
-        const string defaultGenome = "chr21_test";
+        var defaultGenome = ResolveReferenceGenome(patientId, new StepParameters());
         if (!_referenceSetup.IsReady(defaultGenome))
         {
             var blocker = _referenceSetup.DescribeBlocker(defaultGenome);
@@ -79,7 +81,7 @@ public class AlignmentService : PipelineStepBase
 
         var dryRun = parameters.GetBool("dryRun", false);
         var threads = parameters.GetInt("threads", 4);
-        var reference = parameters.GetString("referenceGenome") ?? "chr21_test";
+        var reference = ResolveReferenceGenome(patientId, parameters);
         var needsRna = _uploadService.HasRnaSeq(patientId);
 
         // Dry-run never touches the reference (align.py's dry_run_stub short-circuits before
@@ -179,7 +181,7 @@ public class AlignmentService : PipelineStepBase
 
     private Dictionary<string, string> BuildPythonArgs(string patientId, string sampleType, StepParameters parameters)
     {
-        var reference = parameters.GetString("referenceGenome") ?? "chr21_test";
+        var reference = ResolveReferenceGenome(patientId, parameters);
         var outputBam = Paths.BuildOutputPath(patientId, StepId, sampleType, ".bam");
         var uploadDir = Paths.GetStepDir(patientId, PipelineStepIds.Upload);
 
@@ -205,7 +207,7 @@ public class AlignmentService : PipelineStepBase
         if (isRna) args["rna"] = "true";
         try
         {
-            return await Python.RunAndParseAsync("align.py", args, new PythonExecutionOptions { TimeoutSeconds = 7200, CancellationToken = ct }, patientId: patientId);
+            return await Python.RunAndParseAsync("align.py", args, new PythonExecutionOptions { TimeoutSeconds = Config.GetStepTimeout(StepId), CancellationToken = ct }, patientId: patientId);
         }
         catch (Common.Exceptions.PythonExecutionException ex)
         {

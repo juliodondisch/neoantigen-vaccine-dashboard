@@ -50,8 +50,10 @@ public class ProteinEffectsService : PipelineStepBase
         RequiredTools = new[] { "vep" },
     };
 
-    public ProteinEffectsService(PathResolver paths, FileSystemService files, PythonRunner python, ToolChecker tools, ILogger<ProteinEffectsService> logger)
-        : base(paths, files, python, tools, logger)
+    public override string[] PrimaryOutputPatterns => new[] { "protein_altering_*.tsv" };
+
+    public ProteinEffectsService(PathResolver paths, FileSystemService files, PythonRunner python, ToolChecker tools, AppConfig config, ILogger<ProteinEffectsService> logger)
+        : base(paths, files, python, tools, config, logger)
     {
     }
 
@@ -76,7 +78,7 @@ public class ProteinEffectsService : PipelineStepBase
 
         try
         {
-            var response = await Python.RunAndParseAsync("annotate_effects.py", args, new PythonExecutionOptions { TimeoutSeconds = 1800, CancellationToken = ct }, patientId: patientId);
+            var response = await Python.RunAndParseAsync("annotate_effects.py", args, new PythonExecutionOptions { TimeoutSeconds = Config.GetStepTimeout(StepId), CancellationToken = ct }, patientId: patientId);
             WriteSummary(patientId, response.Summary);
             return BuildResult(patientId, response, DateTime.UtcNow - start);
         }

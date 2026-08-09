@@ -31,6 +31,25 @@ public class PythonRunner
     private readonly PatientLogger _patientLog;
     private readonly ILogger<PythonRunner> _logger;
 
+    // Projects C# AppConfig.ToolPaths into the subprocess environment so python/common/config.py's
+    // ToolConfig.from_env() resolves the exact binaries the C# side validated, rather than
+    // whatever happens to be on the ambient shell PATH — these two tool-resolution systems used
+    // to run fully independently, which meant fixing a tool path in appsettings.json had no
+    // effect on what the Python side actually invoked (see docs/CORRECTION_PLAN.md §3).
+    private static readonly Dictionary<string, string> ToolEnvVarNames = new()
+    {
+        ["bwa-mem2"] = "TOOL_BWA_MEM2",
+        ["samtools"] = "TOOL_SAMTOOLS",
+        ["gatk"] = "TOOL_GATK",
+        ["STAR"] = "TOOL_STAR",
+        ["vep"] = "TOOL_VEP",
+        ["OptiType"] = "TOOL_OPTITYPE",
+        ["pvacseq"] = "TOOL_PVACTOOLS",
+        ["pvacvector"] = "TOOL_PVACVECTOR",
+        ["mhcflurry"] = "TOOL_MHCFLURRY",
+        ["salmon"] = "TOOL_SALMON",
+    };
+
     public PythonRunner(AppConfig config, PathResolver paths, PatientLogger patientLog, ILogger<PythonRunner> logger)
     {
         _config = config;
@@ -38,6 +57,35 @@ public class PythonRunner
         _patientLog = patientLog;
         _logger = logger;
     }
+
+    // Live per-patient stdout/stderr tail (last N lines), so a long-running step's progress is
+    // visible while it's still executing rather than only after PythonRunner buffers the whole
+    // thing to completion (docs/CORRECTION_PLAN.md §8 — a 10-minute step used to mean 10
+    // minutes of total silence in the UI). Read via GetLiveTail; overlaid onto JobRecord.LogTail
+    // by StepsController while a job is Running.
+    private const int LiveTailMaxLines = 50;
+    private readonly System.Collections.Concurrent.ConcurrentDictionary<string, Queue<string>> _liveTails = new();
+
+    private void AppendLiveTail(string patientId, string line)
+    {
+        var queue = _liveTails.GetOrAdd(patientId, _ => new Queue<string>());
+        lock (queue)
+        {
+            queue.Enqueue(line);
+            while (queue.Count > LiveTailMaxLines)
+                queue.Dequeue();
+        }
+    }
+
+    public string? GetLiveTail(string patientId)
+    {
+        if (!_liveTails.TryGetValue(patientId, out var queue))
+            return null;
+        lock (queue)
+            return queue.Count == 0 ? null : string.Join("\n", queue);
+    }
+
+    public void ClearLiveTail(string patientId) => _liveTails.TryRemove(patientId, out _);
 
     public async Task<PythonExecutionResult> RunAsync(string scriptName, Dictionary<string, string> args, PythonExecutionOptions? options = null, string? patientId = null)
     {
@@ -54,7 +102,17 @@ public class PythonRunner
         }
 
         if (patientId is not null)
+        {
             _patientLog.Info(patientId, scriptName, $"Invoking: {string.Join(' ', commandParts.Skip(1))}");
+
+            options ??= new PythonExecutionOptions();
+            var originalStdout = options.OnStdoutLine;
+            var originalStderr = options.OnStderrLine;
+            var capturedPatientId = patientId;
+            options.OnStdoutLine = line => { AppendLiveTail(capturedPatientId, line); originalStdout?.Invoke(line); };
+            options.OnStderrLine = line => { AppendLiveTail(capturedPatientId, line); originalStderr?.Invoke(line); };
+            ClearLiveTail(patientId);
+        }
 
         var result = await RunRawAsync(commandParts.ToArray(), options);
 
@@ -114,6 +172,10 @@ public class PythonRunner
         };
         for (var i = 1; i < commandParts.Length; i++)
             psi.ArgumentList.Add(commandParts[i]);
+
+        foreach (var (toolKey, envVar) in ToolEnvVarNames)
+            if (_config.ToolPaths.TryGetValue(toolKey, out var toolPath))
+                psi.Environment[envVar] = toolPath;
 
         if (options.EnvironmentVariables is not null)
             foreach (var (k, v) in options.EnvironmentVariables)

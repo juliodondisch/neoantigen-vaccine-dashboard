@@ -53,9 +53,11 @@ public class VaccineDesignService : PipelineStepBase
         RequiredTools = Array.Empty<string>(),
     };
 
+    public override string[] PrimaryOutputPatterns => new[] { "construct_*.json" };
+
     public VaccineDesignService(PathResolver paths, FileSystemService files, PythonRunner python, ToolChecker tools,
-        RankingService rankingService, HlaTypingService hlaService, ILogger<VaccineDesignService> logger)
-        : base(paths, files, python, tools, logger)
+        AppConfig config, RankingService rankingService, HlaTypingService hlaService, ILogger<VaccineDesignService> logger)
+        : base(paths, files, python, tools, config, logger)
     {
         _rankingService = rankingService;
         _hlaService = hlaService;
@@ -94,7 +96,7 @@ public class VaccineDesignService : PipelineStepBase
 
         try
         {
-            var response = await Python.RunAndParseAsync("design_vaccine.py", args, new PythonExecutionOptions { TimeoutSeconds = 600, CancellationToken = ct }, patientId: patientId);
+            var response = await Python.RunAndParseAsync("design_vaccine.py", args, new PythonExecutionOptions { TimeoutSeconds = Config.GetStepTimeout(StepId), CancellationToken = ct }, patientId: patientId);
             WriteSummary(patientId, response.Summary);
             return BuildResult(patientId, response, DateTime.UtcNow - start);
         }

@@ -34,9 +34,11 @@ public class FilteringService : PipelineStepBase
         RequiredTools = Array.Empty<string>(),
     };
 
-    public FilteringService(PathResolver paths, FileSystemService files, PythonRunner python, ToolChecker tools,
+    public override string[] PrimaryOutputPatterns => new[] { "filtered_*.tsv" };
+
+    public FilteringService(PathResolver paths, FileSystemService files, PythonRunner python, ToolChecker tools, AppConfig config,
         ImmunogenicityService immunogenicityService, ReferenceSetupService referenceSetup, ILogger<FilteringService> logger)
-        : base(paths, files, python, tools, logger)
+        : base(paths, files, python, tools, config, logger)
     {
         _immunogenicityService = immunogenicityService;
         _referenceSetup = referenceSetup;
@@ -51,7 +53,7 @@ public class FilteringService : PipelineStepBase
 
         var applyExpression = parameters.GetBool("applyExpressionFilter", RnaSeqAvailable(patientId));
         var useMini = parameters.GetBool("useMiniProteome", true);
-        var reference = parameters.GetString("referenceGenome") ?? "chr21_test";
+        var reference = ResolveReferenceGenome(patientId, parameters);
 
         var preMadeExpressionFile = Files.FindLatestFile(patientId, PipelineStepIds.Upload, "tumor_rna_expression_*.tsv");
         var expressionPath = preMadeExpressionFile is not null
@@ -78,7 +80,7 @@ public class FilteringService : PipelineStepBase
 
         try
         {
-            var response = await Python.RunAndParseAsync("filter_candidates.py", args, new PythonExecutionOptions { TimeoutSeconds = 600, CancellationToken = ct }, patientId: patientId);
+            var response = await Python.RunAndParseAsync("filter_candidates.py", args, new PythonExecutionOptions { TimeoutSeconds = Config.GetStepTimeout(StepId), CancellationToken = ct }, patientId: patientId);
             WriteSummary(patientId, response.Summary);
             return BuildResult(patientId, response, DateTime.UtcNow - start);
         }

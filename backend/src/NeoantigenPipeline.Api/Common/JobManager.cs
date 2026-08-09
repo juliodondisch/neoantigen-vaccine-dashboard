@@ -45,12 +45,60 @@ public class JobManager
     public JobRecord? GetJob(string patientId, string jobId) =>
         _jobs.TryGetValue(JobKey(patientId, jobId), out var job) ? job : LoadJob(patientId, jobId);
 
-    public JobRecord? GetActiveJobForStep(string patientId, string stepId) =>
-        _jobs.Values.FirstOrDefault(j => j.PatientId == patientId && j.StepId == stepId &&
-            (j.Status == JobStatus.Queued || j.Status == JobStatus.Running));
+    // Reconciled patient IDs, so a restart doesn't re-scan the same patient's job history on
+    // every request (jobs are per-patient, not global, so this is checked lazily per patient
+    // the first time anything asks about their jobs — see GetJob/GetActiveJobForStep/ListJobs).
+    private readonly ConcurrentDictionary<string, bool> _reconciled = new();
 
-    public List<JobRecord> ListJobs(string patientId) =>
-        _jobs.Values.Where(j => j.PatientId == patientId).OrderByDescending(j => j.StartedAt).ToList();
+    /// <summary>If the backend restarts mid-run, a persisted job record is left permanently
+    /// "Running" with no live CancellationTokenSource, and nothing was reconciling it — the
+    /// step would report Running forever (docs/CORRECTION_PLAN.md §5.3). Marks any such orphan
+    /// Failed with a clear reason. Cheap and idempotent; safe to call repeatedly.</summary>
+    public void ReconcileOrphanedJobs(string patientId)
+    {
+        if (!_reconciled.TryAdd(patientId, true))
+            return;
+
+        var dir = _paths.GetJobsDir(patientId);
+        if (!Directory.Exists(dir))
+            return;
+
+        foreach (var file in Directory.GetFiles(dir, "*.json"))
+        {
+            JobRecord? job;
+            try
+            {
+                job = JsonSerializer.Deserialize<JobRecord>(File.ReadAllText(file));
+            }
+            catch
+            {
+                continue;
+            }
+            if (job is null || job.Status != JobStatus.Running)
+                continue;
+            if (_cancellations.ContainsKey(JobKey(job.PatientId, job.JobId)))
+                continue; // genuinely in-flight in this process, not orphaned
+
+            job.Status = JobStatus.Failed;
+            job.ErrorMessage = "Interrupted — backend restarted while job was running.";
+            job.CompletedAt = DateTime.UtcNow;
+            PersistJob(job);
+            _patientLog.Warning(job.PatientId, job.StepId, $"Job {job.JobId} reconciled as Failed after backend restart (was left Running).");
+        }
+    }
+
+    public JobRecord? GetActiveJobForStep(string patientId, string stepId)
+    {
+        ReconcileOrphanedJobs(patientId);
+        return _jobs.Values.FirstOrDefault(j => j.PatientId == patientId && j.StepId == stepId &&
+            (j.Status == JobStatus.Queued || j.Status == JobStatus.Running));
+    }
+
+    public List<JobRecord> ListJobs(string patientId)
+    {
+        ReconcileOrphanedJobs(patientId);
+        return _jobs.Values.Where(j => j.PatientId == patientId).OrderByDescending(j => j.StartedAt).ToList();
+    }
 
     public bool CancelJob(string patientId, string jobId)
     {

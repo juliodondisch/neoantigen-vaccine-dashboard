@@ -1,5 +1,98 @@
 # Progress
 
+## Fifth pass (2026-08-08) — correction plan from a real EC2 deployment attempt
+
+`docs/CORRECTION_PLAN.md` was written after steps 1-4 ran successfully against real 148GB/134GB
+GIAB HG008 tumor-normal WGS data on AWS EC2 (Amazon Linux 2023, m5.2xlarge). This pass works
+through every item in it, all edits made on the Mac (no bioinformatics tools here — verified via
+`dotnet build`/`dotnet test`/`py_compile`/`tsc --noEmit` and one live `dotnet run` smoke test per
+config permutation, not by re-running the heavy tools).
+
+**§1 config consolidation (the big one — "which reference genome" lived in 5 different places):**
+- `AppConfig.DefaultReferenceGenome` and `AllowedOrigins` no longer carry inline defaults;
+  `Validate()` throws at startup if either is unset, or if `ToolPaths` is missing any of the 8
+  required tool keys — fails loudly in the first second instead of silently falling back to a
+  dev fixture value hours into a real run.
+- Found a genuine bug while adding this: `AllowedOrigins`' old field-initializer default
+  (`{ "http://localhost:3000" }`) was silently duplicated by .NET's config binder once
+  `appsettings.json` also supplied one entry — confirmed live (`origins=…3000,…3000` in the new
+  startup log line before the fix, single entry after). Array-typed `AppConfig` properties now
+  default to `Array.Empty<T>()`, matching the pattern already used for `DefaultReferenceGenome`.
+- Removed every hardcoded `"chr21_test"` fallback from `AlignmentService`, `VariantCallingService`,
+  `FilteringService`, `PatientRepository`. Added `PipelineStepBase.ResolveReferenceGenome()`
+  implementing the resolution order from the plan (step parameter → patient's own stored
+  `ReferenceGenome` → app default) — reads `patient.json` directly rather than through
+  `PatientRepository`, since `PatientRepository → StepRegistry → IPipelineStep → PatientRepository`
+  would be a DI cycle if injected into the step base class.
+- `PathResolver.GetIntervalsPath()` added; `VariantCallingService`'s `intervals` arg now
+  defaults to it instead of `""` (was silently scanning the whole 3.1Gb genome).
+- `StepTimeoutSeconds` (per-step override dict + `Config.GetStepTimeout(stepId)`) replaces every
+  hardcoded `TimeoutSeconds = N` across all 8 steps that call Python; HLA typing's 600s (far too
+  short for a real ~10min OptiType run) is now 3600s via config, not a code change.
+- `Program.cs` logs `Config loaded: env=… refGenome=… dataRoot=… origins=…` right after
+  `Validate()` — verified live in both Production (no launch profile) and Development.
+- `python/common/config.py`'s `ToolConfig` gained the missing `mhcflurry` field; `PythonRunner`
+  now projects every `AppConfig.ToolPaths` entry into the subprocess environment
+  (`TOOL_BWA_MEM2`, `TOOL_SAMTOOLS`, …) on every invocation, so the C# and Python tool-resolution
+  systems (previously fully independent) actually agree.
+- `global.json` pinned to `.NET 10` at repo root — the `.slnx`/MSBuish-17.8 mismatch that blocked
+  the live EC2 session is now caught by SDK negotiation rather than a cryptic `MSB4068`.
+
+**§4 domain bug — OptiType needs FASTQ, not BAM:** `type_hla.py` rewritten: extract HLA region
+(`chr6:29000000-33000000`) → count/estimate depth → downsample to ~30x if needed → BAM-to-FASTQ
+via `samtools fastq` → `optitype run -i <fastq...> --dna -o <dir> --verbose` (the real `click`-
+based CLI, not the old flat `OptiTypePipeline.py -i -d -v -o` guess). `strip_chr_prefix()`
+removed — moot once OptiType does its own mapping. Still marked TEMP-PATCH: this is one real
+server pass's worth of verification, not exhaustively tested against every OptiType install method.
+
+**§5 real code bugs:**
+- `FileSystemService.ReadTextFile` no longer calls `File.ReadAllText` unconditionally — binary/
+  compressed extensions (`.bam`, `.gz`, `.fastq`, …) get a placeholder message instead of an
+  attempted read; a 144GB BAM preview used to OOM-crash the backend. `FileTable.tsx` hides the
+  Preview button for the same extensions.
+- Step status resolution: `IPipelineStep.PrimaryOutputPatterns` (default empty = old
+  any-file-counts behavior; each step overrides with its real final-output glob, e.g.
+  `somatic_pass_*.vcf.gz` for variant calling) plus a job-record check means a step whose last
+  job actually **failed** no longer reports `Completed` just because an intermediate file (e.g.
+  HLA typing's scratch `hla_region_reads.bam`) is sitting on disk. Reads the most recent job
+  record straight off `_jobs/*.json` (same DI-cycle reason as the reference-genome resolver).
+- `JobManager.ReconcileOrphanedJobs`: a job record left `Running` by an unclean backend
+  shutdown is marked `Failed` ("Interrupted — backend restarted...") the first time anything
+  reads that patient's jobs after restart, rather than showing Running forever.
+- `call_variants.py` — checked against §5.5's claim that `FilterMutectCalls` isn't wired in:
+  it already is, correctly, producing `somatic_pass_*.vcf.gz` with PASS-only filtering. No
+  change needed here; the plan's finding must predate a fix already present in this repo.
+- `annotate_effects.py` — VEP invocation now passes `--compress_output bgzip`; the output was
+  named `annotated_*.vcf.gz` but written as plain text before this.
+
+**§6/§9 provisioning:** rather than adding a second, parallel `setup.sh`/`fetch_references.py`
+(the plan's proposal), extended the existing single-source-of-truth scripts instead —
+`setup_tools.py` (conda-based) gained `conda-forge::tk` (pvacseq's `import turtle` needs Tk
+bindings) and `conda-forge::glpk` (OptiType's pyomo ILP solver); `python/requirements.txt`
+gained `setuptools<81` (mhcflurry needs `pkg_resources`, removed in newer setuptools) and a
+`pandas<2.1` pin (pvactools' own pin). `ToolsController` gained `GET /api/tools/references`
+(wired to a new `ReferenceSetupService.GetStatus()`) so the dashboard can show what reference
+assets are missing before a run fails ten minutes in. See `docs/deviations.md` for why the
+duplicate-script route was skipped.
+
+**§8 logging/progress:** `PythonRunner` now keeps a live per-patient stdout/stderr tail (last 50
+lines) as a script runs, not just after it finishes; `StepsController.GetStatus` overlays it onto
+`JobRecord.LogTail` while a job is `Running`; `StepRunButton.tsx` renders it in a small scrolling
+box. `python/common/response.py` was already clean (stderr + flush, no file-append hack) —
+nothing to remove there.
+
+**§11 deployment ergonomics:** `scripts/set-host.sh <ip>` rewrites `frontend/.env.local`'s API
+base URL and dev origin in one command; `next.config.ts` reads `NEXT_PUBLIC_DEV_ORIGIN` for
+`allowedDevOrigins` instead of a hardcoded IP (there wasn't one in this repo's `next.config.ts`
+to begin with — likely an EC2-local edit that was never committed, see `docs/deviations.md`).
+`DEPLOY.md` gained an Elastic IP recommendation, security-group port list, `git clone` vs. zip-
+transfer caution, and a tmux/systemd note, all in the "before you start" section.
+
+Verified: `dotnet build` + `dotnet test` (30/30 passing) after every stage, `python3 -m
+py_compile` on every touched script, `npx tsc --noEmit` clean, and two live `dotnet run` smoke
+tests (Production and Development configs) confirming the new startup config-provenance log line
+and the `AllowedOrigins` duplication fix.
+
 ## Fourth pass (2026-08-08) — AWS deployment: runtimes, config, network, docs
 
 Before this, `setup_tools.py` only installed bioinformatics tools — .NET/Node.js/conda itself

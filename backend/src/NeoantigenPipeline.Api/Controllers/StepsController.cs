@@ -14,13 +14,15 @@ public class StepsController : ControllerBase
     private readonly StepRegistry _registry;
     private readonly JobManager _jobs;
     private readonly PatientRepository _patients;
+    private readonly PythonRunner _python;
     private readonly ILogger<StepsController> _logger;
 
-    public StepsController(StepRegistry registry, JobManager jobs, PatientRepository patients, ILogger<StepsController> logger)
+    public StepsController(StepRegistry registry, JobManager jobs, PatientRepository patients, PythonRunner python, ILogger<StepsController> logger)
     {
         _registry = registry;
         _jobs = jobs;
         _patients = patients;
+        _python = python;
         _logger = logger;
     }
 
@@ -31,6 +33,10 @@ public class StepsController : ControllerBase
     [HttpGet("states")]
     public async Task<ActionResult<List<StepState>>> GetAllStates(string patientId)
     {
+        // Reconciles any job left "Running" on disk by an unclean backend shutdown before
+        // reading step states below, so a crashed job doesn't show as perpetually in-progress.
+        _jobs.ListJobs(patientId);
+
         var states = new List<StepState>();
         foreach (var step in _registry.GetAllSteps())
             states.Add(await step.GetStateAsync(patientId));
@@ -43,10 +49,14 @@ public class StepsController : ControllerBase
         if (!_registry.TryGetStep(stepId, out var step) || step is null)
             return NotFound(ApiError(404, $"Unknown step '{stepId}'"));
 
+        var activeJob = _jobs.GetActiveJobForStep(patientId, stepId);
+        if (activeJob is { Status: JobStatus.Running } && _python.GetLiveTail(patientId) is { } liveTail)
+            activeJob.LogTail = liveTail;
+
         var response = new StepStatusResponse
         {
             State = await step.GetStateAsync(patientId),
-            ActiveJob = _jobs.GetActiveJobForStep(patientId, stepId),
+            ActiveJob = activeJob,
             InputFiles = step.GetInputFiles(patientId),
             OutputFiles = step.GetOutputFiles(patientId),
         };

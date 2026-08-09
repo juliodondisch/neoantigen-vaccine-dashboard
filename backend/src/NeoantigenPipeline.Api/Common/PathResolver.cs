@@ -48,6 +48,9 @@ public class PathResolver
     public string GetPanelOfNormals(string genomeName) =>
         Path.Combine(GetReferenceDir(genomeName), "panel_of_normals.vcf.gz");
 
+    public string GetIntervalsPath(string genomeName) =>
+        Path.Combine(GetReferenceDir(genomeName), "coding_regions.interval_list");
+
     public string GetProteomeFasta(bool useMini = false) =>
         Path.Combine(_config.ReferenceRoot, "proteome", useMini ? "mini_proteome.fasta" : "uniprot_human.fasta");
 

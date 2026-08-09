@@ -32,8 +32,10 @@ public class VariantCallingService : PipelineStepBase
         RequiredTools = new[] { "gatk" },
     };
 
-    public VariantCallingService(PathResolver paths, FileSystemService files, PythonRunner python, ToolChecker tools, ILogger<VariantCallingService> logger)
-        : base(paths, files, python, tools, logger)
+    public override string[] PrimaryOutputPatterns => new[] { "somatic_pass_*.vcf.gz" };
+
+    public VariantCallingService(PathResolver paths, FileSystemService files, PythonRunner python, ToolChecker tools, AppConfig config, ILogger<VariantCallingService> logger)
+        : base(paths, files, python, tools, config, logger)
     {
     }
 
@@ -46,7 +48,7 @@ public class VariantCallingService : PipelineStepBase
             return StepResult.Fail(StepId, "No matched normal BAM found",
                 "Mutect2 requires a matched normal sample; running tumor-only produces unreliable calls.");
 
-        var reference = parameters.GetString("referenceGenome") ?? "chr21_test";
+        var reference = ResolveReferenceGenome(patientId, parameters);
         var outputVcf = Paths.BuildOutputPath(patientId, StepId, "somatic", ".vcf.gz");
 
         // A panel of normals is recommended but optional for Mutect2. Only pass one through
@@ -63,13 +65,13 @@ public class VariantCallingService : PipelineStepBase
             ["reference"] = Paths.GetReferenceFasta(reference),
             ["output-vcf"] = outputVcf,
             ["panel-of-normals"] = usePon ? ponPath : "",
-            ["intervals"] = parameters.GetString("intervals") ?? "",
+            ["intervals"] = parameters.GetString("intervals") ?? Paths.GetIntervalsPath(reference),
             ["min-vaf"] = parameters.GetDouble("minVaf", 0.05).ToString("F2"),
         };
 
         try
         {
-            var response = await Python.RunAndParseAsync("call_variants.py", args, new PythonExecutionOptions { TimeoutSeconds = 7200, CancellationToken = ct }, patientId: patientId);
+            var response = await Python.RunAndParseAsync("call_variants.py", args, new PythonExecutionOptions { TimeoutSeconds = Config.GetStepTimeout(StepId), CancellationToken = ct }, patientId: patientId);
             WriteSummary(patientId, response.Summary);
             return BuildResult(patientId, response, DateTime.UtcNow - start);
         }

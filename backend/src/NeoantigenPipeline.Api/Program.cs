@@ -87,7 +87,12 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 
-app.Services.GetRequiredService<AppConfig>().Validate();
+var cfg = app.Services.GetRequiredService<AppConfig>();
+cfg.Validate();
+app.Logger.LogInformation(
+    "Config loaded: env={Env} refGenome={Genome} dataRoot={Data} origins={Origins}",
+    app.Environment.EnvironmentName, cfg.DefaultReferenceGenome, cfg.DataRoot,
+    string.Join(",", cfg.AllowedOrigins));
 
 if (app.Environment.IsDevelopment())
 {

@@ -152,6 +152,12 @@ public class FileSystemService
         return JsonSerializer.Deserialize<T>(text, JsonOptions);
     }
 
+    // Extensions that are binary or pre-compressed — never worth (and, for multi-GB BAMs,
+    // dangerous to) read into a string for preview. File.ReadAllText on a 144GB BAM took down
+    // the backend with an OutOfMemoryException during real deployment (docs/CORRECTION_PLAN.md §5.1).
+    private static readonly string[] NonPreviewableExtensions =
+        { ".bam", ".bai", ".cram", ".crai", ".gz", ".bz2", ".fastq", ".fq", ".pdf" };
+
     public string? ReadTextFile(string patientId, string stepId, string fileName, int maxBytes = 1_000_000)
     {
         var path = ResolveExistingFile(patientId, stepId, fileName, throwIfMissing: false);
@@ -159,13 +165,29 @@ public class FileSystemService
             return null;
 
         var info = new FileInfo(path);
-        if (info.Length <= maxBytes)
-            return File.ReadAllText(path);
+        if (NonPreviewableExtensions.Any(ext => fileName.EndsWith(ext, StringComparison.OrdinalIgnoreCase)))
+            return $"[Binary or compressed file ({FormatBytes(info.Length)}) — preview not supported.]";
 
-        var buffer = new byte[maxBytes];
         using var stream = new FileStream(path, FileMode.Open, FileAccess.Read);
-        var read = stream.Read(buffer, 0, maxBytes);
-        return System.Text.Encoding.UTF8.GetString(buffer, 0, read);
+        var buffer = new byte[(int)Math.Min(maxBytes, info.Length)];
+        var read = stream.Read(buffer, 0, buffer.Length);
+        var text = System.Text.Encoding.UTF8.GetString(buffer, 0, read);
+        return info.Length > maxBytes
+            ? text + $"\n\n[truncated — showing first {maxBytes:N0} of {info.Length:N0} bytes]"
+            : text;
+    }
+
+    private static string FormatBytes(long bytes)
+    {
+        string[] units = { "B", "KB", "MB", "GB", "TB" };
+        double size = bytes;
+        var unit = 0;
+        while (size >= 1024 && unit < units.Length - 1)
+        {
+            size /= 1024;
+            unit++;
+        }
+        return $"{size:F1} {units[unit]}";
     }
 
     public long GetAvailableDiskBytes()

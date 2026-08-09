@@ -24,9 +24,11 @@ public class ImmunogenicityService : PipelineStepBase
         RequiredTools = Array.Empty<string>(),
     };
 
-    public ImmunogenicityService(PathResolver paths, FileSystemService files, PythonRunner python, ToolChecker tools,
+    public override string[] PrimaryOutputPatterns => new[] { "immunogenicity_*.tsv" };
+
+    public ImmunogenicityService(PathResolver paths, FileSystemService files, PythonRunner python, ToolChecker tools, AppConfig config,
         PresentationService presentationService, ILogger<ImmunogenicityService> logger)
-        : base(paths, files, python, tools, logger)
+        : base(paths, files, python, tools, config, logger)
     {
         _presentationService = presentationService;
     }
@@ -56,7 +58,7 @@ public class ImmunogenicityService : PipelineStepBase
 
         try
         {
-            var response = await Python.RunAndParseAsync("predict_immunogenicity.py", args, new PythonExecutionOptions { TimeoutSeconds = 600, CancellationToken = ct }, patientId: patientId);
+            var response = await Python.RunAndParseAsync("predict_immunogenicity.py", args, new PythonExecutionOptions { TimeoutSeconds = Config.GetStepTimeout(StepId), CancellationToken = ct }, patientId: patientId);
             WriteSummary(patientId, response.Summary);
             return BuildResult(patientId, response, DateTime.UtcNow - start);
         }

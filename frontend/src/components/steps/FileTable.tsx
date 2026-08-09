@@ -36,6 +36,12 @@ export function FileTable({
   const showError = useToastStore((s) => s.error);
   const [previewing, setPreviewing] = useState<{ name: string; content: string } | null>(null);
 
+  // Mirrors the backend's NonPreviewableExtensions guard in FileSystemService.ReadTextFile —
+  // the backend already refuses to read these as text, but hiding the button avoids a round
+  // trip that always comes back as a placeholder message.
+  const isPreviewable = (name: string) =>
+    !/\.(bam|bai|cram|crai|gz|bz2|fastq|fq|pdf)$/i.test(name);
+
   const handleDownload = async (file: ManagedFile) => {
     try {
       await downloadFile(patientId, stepId, file.name);
@@ -73,7 +79,7 @@ export function FileTable({
       align: "right",
       render: (f) => (
         <div className="flex justify-end gap-3">
-          {showPreview && (
+          {showPreview && isPreviewable(f.name) && (
             <button type="button" onClick={() => handlePreview(f)} className="text-small text-accent hover:text-accent-hover">
               Preview
             </button>

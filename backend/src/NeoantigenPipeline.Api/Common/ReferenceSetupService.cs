@@ -50,6 +50,17 @@ public class ReferenceSetupService
     public bool IsRnaReferenceReady(string genome) =>
         File.Exists(Path.Combine(GetSalmonIndexDir(genome), "info.json")) && File.Exists(GetTx2GenePath(genome));
 
+    /// <summary>Per-asset readiness for a genome, so the dashboard can show what's missing
+    /// before a run fails ten minutes in (docs/CORRECTION_PLAN.md §6, ToolsController).</summary>
+    public ReferenceStatus GetStatus(string genome) => new()
+    {
+        Genome = genome,
+        FastaReady = IsReady(genome),
+        RnaReady = IsRnaReferenceReady(genome),
+        IntervalsPresent = File.Exists(_paths.GetIntervalsPath(genome)),
+        PanelOfNormalsPresent = File.Exists(_paths.GetPanelOfNormals(genome)),
+    };
+
     public long EstimateRequiredBytes(string genome) =>
         RequiredBytesByGenome.TryGetValue(genome, out var bytes) ? bytes : RequiredBytesByGenome["GRCh38"];
 
@@ -105,4 +116,13 @@ public class ReferenceSetupService
             return (false, ex.Stderr);
         }
     }
+}
+
+public class ReferenceStatus
+{
+    public string Genome { get; set; } = "";
+    public bool FastaReady { get; set; }
+    public bool RnaReady { get; set; }
+    public bool IntervalsPresent { get; set; }
+    public bool PanelOfNormalsPresent { get; set; }
 }

@@ -10,11 +10,15 @@ public class ToolsController : ControllerBase
 {
     private readonly ToolChecker _tools;
     private readonly FileSystemService _files;
+    private readonly ReferenceSetupService _referenceSetup;
+    private readonly AppConfig _config;
 
-    public ToolsController(ToolChecker tools, FileSystemService files)
+    public ToolsController(ToolChecker tools, FileSystemService files, ReferenceSetupService referenceSetup, AppConfig config)
     {
         _tools = tools;
         _files = files;
+        _referenceSetup = referenceSetup;
+        _config = config;
     }
 
     [HttpGet]
@@ -36,6 +40,10 @@ public class ToolsController : ControllerBase
         AvailableBytes = _files.GetAvailableDiskBytes(),
         DataUsedBytes = 0,
     });
+
+    [HttpGet("references")]
+    public ActionResult<ReferenceStatus> GetReferenceStatus([FromQuery] string? genome) =>
+        Ok(_referenceSetup.GetStatus(genome ?? _config.DefaultReferenceGenome));
 }
 
 public class DiskStatus
